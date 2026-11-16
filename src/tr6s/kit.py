@@ -1,5 +1,5 @@
 """
-Layer 2 — TR-6S kit blob. Only the name and raw Reverb Time offset have
+Layer 2 — TR-6S kit blob. Only the name and raw reverb offsets have
 been checked on hardware; instrument offsets below are TR-8S research and
 remain disabled until TR-6S differential captures confirm them.
 
@@ -30,6 +30,7 @@ TRACKS = ["BD", "SD", "LT", "HC", "CH", "OH"]
 
 SIZE = 1312
 REVERB_TIME_RAW_OFFSET = 69  # confirmed by a one-step panel change on kit slot 1
+REVERB_LEVEL_RAW_OFFSET = 70  # confirmed by a one-step panel change on kit slot 1
 REC_BASE = 388
 REC_STRIDE = 52
 # Bytes carrying a sample's envelope and gain. Measured across 669 ACB and 170
@@ -116,6 +117,11 @@ class Kit:
         """Kit reverb time's stored byte; display mapping is not yet established."""
         return self.raw[REVERB_TIME_RAW_OFFSET]
 
+    @property
+    def reverb_level_raw(self) -> int:
+        """Kit reverb level's stored byte; display mapping is not yet established."""
+        return self.raw[REVERB_LEVEL_RAW_OFFSET]
+
     # -------------------------------------------------------------- fields
 
     def get(self, inst: str, field_name: str) -> int:
@@ -187,4 +193,5 @@ class Kit:
 
     def describe(self) -> dict:
         return {"name": self.name, "reverb_time_raw": self.reverb_time_raw,
+                "reverb_level_raw": self.reverb_level_raw,
                 "instruments_unmapped": True}

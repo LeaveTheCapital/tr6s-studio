@@ -23,7 +23,7 @@ TR-8S Studio's pattern and kit editors still use TR-8S offsets. The TR-6S blobs 
 
 The next step is to capture pairs of TR-6S blobs around one panel change at a time and map the pattern and kit fields. See the port notes linked above for the proposed sequence and cautions.
 
-One differential capture has confirmed the raw kit Reverb Time byte at offset 69: a single panel increment changed only that byte from `08` to `09` in kit slot 1. This is exposed as the read-only `Kit.reverb_time_raw` property; its display-value mapping is still to be verified.
+Differential captures on kit slot 1 have confirmed raw Reverb Time at offset 69 (`08` to `09` for one increment) and raw Reverb Level at offset 70 (`00` to `01`). Each change affected exactly one byte, and the full blob matched its baseline after restoration. Both fields are exposed for reading; their display-value mappings remain to be verified.
 
 ## Source
 
