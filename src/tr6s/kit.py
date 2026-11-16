@@ -169,6 +169,42 @@ class Kit:
         except KeyError as error:
             raise KitError(f"unknown TR-6S track {inst!r}") from error
 
+    def candidate_record(self, inst: str) -> dict:
+        """Inspect raw fields at TR-8S record offsets in compact TR-6S order.
+
+        Only `tune_raw` has a confirmed TR-6S field offset. The other labels
+        are candidates and must not be used to construct a device write.
+        """
+        if inst not in TRACKS:
+            raise KitError(f"unknown TR-6S track {inst!r}")
+        base = REC_BASE + TRACKS.index(inst) * REC_STRIDE
+        return {
+            "record_offset": base,
+            "tone_id_candidate": struct.unpack_from("<H", self.raw, base)[0],
+            "tune_raw_verified": self.tune_raw(inst),
+            "decay_raw_candidate": self.raw[base + 3],
+            "level_raw_candidate": self.raw[base + 4],
+            "pan_raw_candidate": self.raw[base + 6],
+            "reverb_send_raw_candidate": self.raw[base + 7],
+            "delay_send_raw_candidate": self.raw[base + 8],
+            "lfo_raw_candidate": self.raw[base + 11],
+        }
+
+    def inspect(self) -> dict:
+        """Return verified reads and separately labelled bulk-layout candidates."""
+        return {
+            "verified": {
+                "name": self.name,
+                "reverb_time_raw": self.reverb_time_raw,
+                "reverb_level_raw": self.reverb_level_raw,
+                "tune_raw_by_track": {inst: self.tune_raw(inst) for inst in TRACKS},
+            },
+            "candidates": {
+                "source": "TR-8S bulk field offsets in confirmed compact TR-6S records",
+                "tracks": {inst: self.candidate_record(inst) for inst in TRACKS},
+            },
+        }
+
     # -------------------------------------------------------------- fields
 
     def get(self, inst: str, field_name: str) -> int:
