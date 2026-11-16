@@ -35,6 +35,10 @@ def main(argv=None) -> int:
     inspect.add_argument("slot", type=int, help="zero-based kit slot")
     inspect.add_argument("--file", type=Path, help="inspect a saved blob instead of reading MIDI")
 
+    diff = commands.add_parser("diff-kit", help="compare two saved kit blobs")
+    diff.add_argument("before", type=Path)
+    diff.add_argument("after", type=Path)
+
     args = parser.parse_args(argv)
     try:
         if args.command == "info":
@@ -50,7 +54,7 @@ def main(argv=None) -> int:
                 output.write(blob)
             result = {"kind": args.kind, "slot": args.slot,
                       "bytes": len(blob), "output": str(args.output)}
-        else:
+        elif args.command == "inspect-kit":
             _slot(args.slot, "kit")
             if args.file:
                 blob = args.file.read_bytes()
@@ -60,6 +64,12 @@ def main(argv=None) -> int:
                     blob = transport.read_blob("kit", args.slot)
                 source = "TR-6S MIDI 1"
             result = {"slot": args.slot, "source": source, **Kit.from_bytes(blob).inspect()}
+        else:
+            before = Kit.from_bytes(args.before.read_bytes())
+            after = Kit.from_bytes(args.after.read_bytes())
+            changes = before.diff(after)
+            result = {"before": str(args.before), "after": str(args.after),
+                      "changed_bytes": len(changes), "changes": changes}
         print(json.dumps(result, indent=2))
         return 0
     except (OSError, ValueError, TransportError, subprocess.SubprocessError) as error:

@@ -1,6 +1,6 @@
 """
-Layer 2 — TR-6S kit blob. The name, raw reverb offsets, and all six tune
-positions have been checked on hardware. Other instrument field offsets below
+Layer 2 — TR-6S kit blob. The name, raw reverb offsets, all six tune
+positions, and BD Decay have been checked on hardware. Other field offsets below
 are TR-8S research and remain disabled until differential captures confirm them.
 
     0..15         name
@@ -37,10 +37,17 @@ LT_TUNE_RAW_OFFSET = 494  # confirmed by a one-step panel change on kit slot 1
 HC_TUNE_RAW_OFFSET = 546  # confirms compact track index 3, not TR-8S index 6
 CH_TUNE_RAW_OFFSET = 598  # confirmed by a one-step panel change on kit slot 1
 OH_TUNE_RAW_OFFSET = 650  # confirms compact track index 5, not TR-8S index 8
+BD_DECAY_RAW_OFFSET = 391  # confirmed by a one-step panel change on kit slot 1
 TUNE_RAW_OFFSETS = dict(zip(TRACKS, (
     BD_TUNE_RAW_OFFSET, SD_TUNE_RAW_OFFSET, LT_TUNE_RAW_OFFSET,
     HC_TUNE_RAW_OFFSET, CH_TUNE_RAW_OFFSET, OH_TUNE_RAW_OFFSET,
 )))
+VERIFIED_RAW_OFFSETS = {
+    REVERB_TIME_RAW_OFFSET: "reverb_time_raw",
+    REVERB_LEVEL_RAW_OFFSET: "reverb_level_raw",
+    BD_DECAY_RAW_OFFSET: "BD_decay_raw",
+    **{offset: f"{track}_tune_raw" for track, offset in TUNE_RAW_OFFSETS.items()},
+}
 REC_BASE = 388
 REC_STRIDE = 52
 # Bytes carrying a sample's envelope and gain. Measured across 669 ACB and 170
@@ -169,6 +176,11 @@ class Kit:
         except KeyError as error:
             raise KitError(f"unknown TR-6S track {inst!r}") from error
 
+    @property
+    def bd_decay_raw(self) -> int:
+        """BD Decay's stored byte; display mapping is not yet established."""
+        return self.raw[BD_DECAY_RAW_OFFSET]
+
     def candidate_record(self, inst: str) -> dict:
         """Inspect raw fields at TR-8S record offsets in compact TR-6S order.
 
@@ -178,17 +190,18 @@ class Kit:
         if inst not in TRACKS:
             raise KitError(f"unknown TR-6S track {inst!r}")
         base = REC_BASE + TRACKS.index(inst) * REC_STRIDE
-        return {
+        record = {
             "record_offset": base,
             "tone_id_candidate": struct.unpack_from("<H", self.raw, base)[0],
             "tune_raw_verified": self.tune_raw(inst),
-            "decay_raw_candidate": self.raw[base + 3],
             "level_raw_candidate": self.raw[base + 4],
             "pan_raw_candidate": self.raw[base + 6],
             "reverb_send_raw_candidate": self.raw[base + 7],
             "delay_send_raw_candidate": self.raw[base + 8],
             "lfo_raw_candidate": self.raw[base + 11],
         }
+        record["decay_raw_verified" if inst == "BD" else "decay_raw_candidate"] = self.raw[base + 3]
+        return record
 
     def inspect(self) -> dict:
         """Return verified reads and separately labelled bulk-layout candidates."""
@@ -197,6 +210,7 @@ class Kit:
                 "name": self.name,
                 "reverb_time_raw": self.reverb_time_raw,
                 "reverb_level_raw": self.reverb_level_raw,
+                "bd_decay_raw": self.bd_decay_raw,
                 "tune_raw_by_track": {inst: self.tune_raw(inst) for inst in TRACKS},
             },
             "candidates": {
@@ -204,6 +218,27 @@ class Kit:
                 "tracks": {inst: self.candidate_record(inst) for inst in TRACKS},
             },
         }
+
+    def diff(self, other: "Kit") -> list[dict]:
+        """Compare kit bytes, labelling verified and candidate field positions."""
+        candidate_offsets = {}
+        candidate_fields = {
+            0: "tone_id_low", 1: "tone_id_high", 3: "decay_raw",
+            4: "level_raw", 6: "pan_raw", 7: "reverb_send_raw",
+            8: "delay_send_raw", 11: "lfo_raw",
+        }
+        for index, track in enumerate(TRACKS):
+            base = REC_BASE + index * REC_STRIDE
+            for delta, field_name in candidate_fields.items():
+                candidate_offsets[base + delta] = f"{track}_{field_name}"
+        return [
+            {"offset": offset, "before": before, "after": after,
+             "verified_field": VERIFIED_RAW_OFFSETS.get(offset),
+             "candidate_field": (None if offset in VERIFIED_RAW_OFFSETS
+                                 else candidate_offsets.get(offset))}
+            for offset, (before, after) in enumerate(zip(self.raw, other.raw))
+            if before != after
+        ]
 
     # -------------------------------------------------------------- fields
 

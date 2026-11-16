@@ -15,11 +15,16 @@ tr6s read-blob kit 0 /tmp/tr6s-kit-000.bin
 tr6s read-blob system 0 /tmp/tr6s-system.bin
 tr6s inspect-kit 1
 tr6s inspect-kit 1 --file /tmp/tr6s-kit-001.bin
+tr6s diff-kit /tmp/kit-before.bin /tmp/kit-after.bin
 ```
 
 The device must be stopped for a bulk read. The CLI uses the TR-6S MIDI 1 ALSA sequencer port so it can coexist with the Pi's MIDI router and connected E16. Set `TR6S_SEQ_PORT` to a `client:port` value if automatic discovery does not find it. The output path must not already exist.
 
-`inspect-kit` groups the hardware-confirmed name, raw reverb values, and six raw tune values under `verified`. It shows tone ID, decay, level, pan, reverb send, delay send, and LFO bytes under `candidates`. Those candidate labels come from TR-8S bulk offsets applied to the confirmed compact TR-6S records; their meanings have not been checked by TR-6S panel changes. The command reads only and does not expose an editor.
+`inspect-kit` groups the hardware-confirmed name, raw reverb values, six raw tune values, and BD Decay under `verified`. It shows tone ID, the other decay bytes, level, pan, reverb send, delay send, and LFO bytes under `candidates`. Those candidate labels come from TR-8S bulk offsets applied to the confirmed compact TR-6S records; their meanings have not yet been checked by TR-6S panel changes. The command reads only and does not expose an editor.
+
+`diff-kit` reports changed offsets between two saved kit blobs and labels a field as `verified_field` or `candidate_field`. A candidate label is a pointer for the next panel check, not a confirmed TR-6S field.
+
+BD Decay is now confirmed at offset 391: one panel increment changed only `00` to `01`, and reversing it restored the full 1,312-byte baseline. The inspector marks this raw field as verified.
 
 ## Current limits
 
