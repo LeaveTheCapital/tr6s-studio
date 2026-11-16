@@ -9,7 +9,7 @@ a seed means the same bar twice.
 
 import pytest
 
-from tr8s.style import (ACCENT, BACKBEAT, DOWNBEATS, GHOST, OFFBEAT_8, REST,
+from tr6s.style import (ACCENT, BACKBEAT, DOWNBEATS, GHOST, OFFBEAT_8, REST,
                         ROLES, STYLES, arrangement, describe, euclid, generate,
                         humanise, merge, place, thin)
 import random

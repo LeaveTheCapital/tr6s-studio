@@ -43,7 +43,7 @@ def tones_search(**kw):
     cat = Catalog.load()
     if not len(cat):
         raise ToolError(
-            "the tone catalogue is empty. Run `tr8s analyse-tones` to measure "
+            "the tone catalogue is empty. Run `tr6s analyse-tones` to measure "
             "them, or use tones.probe for a single tone's name and type.")
     return [vars(t) for t in cat.search(**kw)]
 

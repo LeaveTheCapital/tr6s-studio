@@ -9,7 +9,7 @@ import wave
 
 import pytest
 
-from tr8s.samples import (RATE, SampleError, pcm_tone_record, to_machine_pcm,
+from tr6s.samples import (RATE, SampleError, pcm_tone_record, to_machine_pcm,
                           tone_record)
 
 

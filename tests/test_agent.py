@@ -10,7 +10,7 @@ import os
 import pytest
 
 from fake import load_fixture_kit, load_fixture_pattern, make_device
-from tr8s import agent, config, tools
+from tr6s import agent, config, tools
 
 
 @pytest.fixture
@@ -41,7 +41,7 @@ def test_an_unknown_tool_is_an_error_result(wired):
 
 
 def test_a_mutating_tool_is_logged_as_the_ai(wired):
-    from tr8s.changelog import CHANGELOG
+    from tr6s.changelog import CHANGELOG
     CHANGELOG.clear()
     out = agent.run_tool("pattern.set_steps",
                          {"slot": "1-01", "variation": "A", "instrument": "BD",
@@ -54,7 +54,7 @@ def test_a_mutating_tool_is_logged_as_the_ai(wired):
 def test_the_mcp_server_offers_every_registry_tool():
     pytest.importorskip("claude_agent_sdk")
     server = agent.build_server()
-    assert server["type"] == "sdk" and server["name"] == "tr8s"
+    assert server["type"] == "sdk" and server["name"] == "tr6s"
 
 
 def test_a_pasted_key_is_validated_and_kept_private(tmp_path):
@@ -97,7 +97,7 @@ def test_a_device_select_by_the_assistant_is_reported(wired, monkeypatch):
 
 
 def test_the_studio_context_names_the_pattern_and_the_transport(wired):
-    from tr8s.server import Studio
+    from tr6s.server import Studio
     s = Studio()
     s.select(0)
     ctx = s.chat_context()
@@ -107,7 +107,7 @@ def test_the_studio_context_names_the_pattern_and_the_transport(wired):
 
 
 def test_the_studio_follows_an_assistant_move(wired):
-    from tr8s.server import Studio
+    from tr6s.server import Studio
     s = Studio()
     s.slot = 5
     s._machine_moved_by_tool(0)

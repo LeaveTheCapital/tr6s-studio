@@ -19,11 +19,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from tr8s import tools                                    # noqa: E402
-from tr8s.device import slot_to_panel                     # noqa: E402
-from tr8s.monitor import INST_NOTES                       # noqa: E402
-from tr8s.pattern import Pattern                          # noqa: E402
-from tr8s.server import Studio                            # noqa: E402
+from tr6s import tools                                    # noqa: E402
+from tr6s.device import slot_to_panel                     # noqa: E402
+from tr6s.monitor import INST_NOTES                       # noqa: E402
+from tr6s.pattern import Pattern                          # noqa: E402
+from tr6s.server import Studio                            # noqa: E402
 
 SCRATCH_PATTERN = 127          # 8-16
 RESULTS = []
@@ -99,7 +99,7 @@ def t_kit_reference(d):
 @check("the TUNE curve matches the machine")
 def t_tune(d):
     """Tune an instrument to a named note and check it lands where predicted."""
-    from tr8s.calibration import tune_semitones_for_byte
+    from tr6s.calibration import tune_semitones_for_byte
     kit = tools.call("pattern.get", {"slot": SCRATCH_PATTERN})["kit"]
     k = d.read_kit(kit)
     was = k.get("BD", "tune")
@@ -197,7 +197,7 @@ def t_variation(d, st):
     hits = st.monitor.snapshot().get("hits") or []
     if not st.pattern:
         raise SkipCheck("no pattern is loaded in the studio")
-    from tr8s.fingerprint import heard_set
+    from tr6s.fingerprint import heard_set
     m = st.prints.identify(heard_set(hits), only=st.slot) if len(st.prints) else None
     v, conf = (m.variation, round(m.score, 2)) if m else (None, 0.0)
     if v is None:
@@ -217,7 +217,7 @@ def t_controls(d, st):
     only report what it saw. A CC that arrives but is unmapped is a bug; none
     arriving is a skip, not a pass.
     """
-    from tr8s.ccmap import describe, BEAT_CC
+    from tr6s.ccmap import describe, BEAT_CC
     ccs = [c for _, ch, cc, v in (st.monitor.snapshot().get("recent_cc") or [])
            if cc != BEAT_CC for c in [cc]]
     if not ccs:
@@ -279,7 +279,7 @@ def t_clock(d, st):
 
 @check("undo puts back what was overwritten")
 def t_undo(d):
-    from tr8s.history import HISTORY
+    from tr6s.history import HISTORY
     HISTORY.clear()
     before = tools.call("pattern.get", {"slot": SCRATCH_PATTERN})
     tools.call("pattern.set_steps", {"slot": SCRATCH_PATTERN, "variation": "A",
@@ -331,7 +331,7 @@ def t_melody(d):
     inst = melodic[0]
     root = k[inst]["root"]
     notes = "C2 . D#2 . G2 . A#2 ."
-    from tr8s.melody import note_to_midi
+    from tr6s.melody import note_to_midi
     # keep it inside Coarse Tune's reach from whatever this tone's root is
     shift = 0
     while abs(note_to_midi("C2") + shift - note_to_midi(root)) > 20:

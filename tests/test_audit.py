@@ -8,11 +8,11 @@ that it stays quiet.
 
 import pytest
 
-from tr8s.audit import LOW_HZ, METAL, audit, step_ms
-from tr8s.kit import Kit
-from tr8s.pattern import Pattern
-from tr8s.tones import Catalog, Tone
-from tr8s.transport import BLOB_SIZES
+from tr6s.audit import LOW_HZ, METAL, audit, step_ms
+from tr6s.kit import Kit
+from tr6s.pattern import Pattern
+from tr6s.tones import Catalog, Tone
+from tr6s.transport import BLOB_SIZES
 
 
 def tone(id, name, centroid, decay=100, sustained=False, root=None):
@@ -199,7 +199,7 @@ def test_a_melodic_part_is_never_flagged_as_smearing():
     A bassline note that rings until the next one is legato. Reading it as a
     muddy drum part is the audit misunderstanding what the track is.
     """
-    from tr8s.melody import write as melody_write
+    from tr6s.melody import write as melody_write
     p, k, c = setup({"LT": ("x.x.x.x.x.x.x.x.", 1)},
                     [tone(1, "Bass", 200, decay=900, root="C2")], tempo=140)
     melody_write(p, "A", "LT", "C2 D2 E2 F2 G2 A2 B2 C3", "C2", mode="coarse")
@@ -219,7 +219,7 @@ def test_the_kit_envelope_shortens_what_the_audit_sees():
     kit.fix shortens DECAY. If the audit only reads the tone's catalogue
     length it reports the same problem forever and the fix looks broken.
     """
-    from tr8s.calibration import decay_byte_for_ms
+    from tr6s.calibration import decay_byte_for_ms
     p, k, c = setup({"OH": ("x.x.x.x.x.x.x.x.", 1)},
                     [tone(1, "Long hat", 1700, decay=900)], tempo=140)
     assert "smearing" in kinds(audit(p, k, c))

@@ -16,10 +16,10 @@ from __future__ import annotations
 import struct
 from dataclasses import dataclass, field
 
-TRACKS = ["BD", "SD", "LT", "MT", "HT", "RS", "HC", "CH", "OH", "CC", "RC"]
+TRACKS = ["BD", "SD", "LT", "HC", "CH", "OH"]
 VARIATIONS = "ABCDEFGH"
 
-SIZE = 24504
+SIZE = 24599
 HEADER = 144
 BLOCK = 2436
 NBLOCKS = 10
@@ -59,7 +59,7 @@ class PatternError(ValueError):
 
 @dataclass
 class Pattern:
-    """A mutable TR-8S pattern. `raw` is always a valid 24504-byte blob."""
+    """A TR-6S pattern blob with a verified common header."""
 
     raw: bytearray = field(repr=False)
 
@@ -121,10 +121,11 @@ class Pattern:
 
     @property
     def shuffle(self) -> int:
-        return self.raw[OFF_SHUFFLE] - 128
+        raise PatternError("TR-6S shuffle blob offset is not verified")
 
     @shuffle.setter
     def shuffle(self, amount: int):
+        raise PatternError("TR-6S shuffle blob offset is not verified")
         if not -128 <= amount <= 127:
             raise PatternError("shuffle must be -128..127")
         self.raw[OFF_SHUFFLE] = (amount + 128) & 0xFF
@@ -146,6 +147,7 @@ class Pattern:
 
     @classmethod
     def _step_offset(cls, blk: int, track: int, step: int) -> int:
+        raise PatternError("TR-6S step blob offsets are not verified")
         return (HEADER + blk * BLOCK + TRACK_BASE
                 + track * TRACK_STRIDE + step * STEP_STRIDE)
 
@@ -250,10 +252,5 @@ class Pattern:
             "kit": self.kit,
             "kit_panel": self.kit + 1,
             "scale": self.scale,
-            "shuffle": self.shuffle,
-            "variations": {
-                v: self.variation_summary(v)
-                for v in VARIATIONS
-                if self.variation_summary(v)
-            },
+            "variations_unmapped": True,
         }

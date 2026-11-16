@@ -6,14 +6,14 @@ an HTTP layer, or a CLI) can drive the TR-8S without knowing anything about
 SysEx. Tools take and return plain JSON-serialisable values, and raise
 ToolError with an actionable message rather than leaking byte offsets.
 
-    from tr8s.tools import REGISTRY, call, schemas
+    from tr6s.tools import REGISTRY, call, schemas
     schemas()                       -> list of JSON schemas
     call("pattern.get", {"slot": 0})
 
 Layout: this file is the registry and the helpers every tool shares. Each
 namespace lives in its own module (`pattern.py`, `kit.py`, ...) and registers
 its tools on import; the imports at the bottom of this file are what make
-`import tr8s.tools` bring the whole surface in.
+`import tr6s.tools` bring the whole surface in.
 
 Design rules:
   * Slots are accepted as either a linear 0..127 index or a panel string
@@ -172,7 +172,7 @@ DEFAULT_LINE = {
 
 
 def _library_dir() -> Path:
-    # repo root / library. This file is src/tr8s/tools/_core.py: when the
+    # repo root / library. This file is src/tr6s/tools/_core.py: when the
     # tools became a package the path was left one level short (src/library)
     # and library.list quietly reported no tracks at all.
     return Path(__file__).resolve().parents[3] / "library"

@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from . import config
 
 ROLAND = 0x41
-MODEL_TR8S = (0x00, 0x00, 0x00, 0x45)
+MODEL_TR6S = (0x00, 0x00, 0x00, 0x6D)
 DT1 = 0x12
 RQ1 = 0x11
 DEFAULT_DEVICE_ID = 0x10
@@ -42,13 +42,15 @@ GET_OFFSETS = {"system": 0x31, "pattern": 0x41, "kit": 0x51,
 SEND_OFFSETS = {"system": 0x30, "pattern": 0x40, "kit": 0x50,
                 "tone": 0x60, "pcm_tone": 0x70, "sample": 0x72}
 WRITE_OFFSETS = {"system": 0x00, "pattern": 0x01, "kit": 0x02, "tone": 0x03}
-BLOB_SIZES = {"system": 752, "pattern": 24504, "kit": 1312,
-              "tone": 36, "pcm_tone": 64}
+# Measured on a TR-6S with firmware 1.51 / revision 0BDE. Tone and sample
+# bulk formats have not been measured on this model.
+BLOB_SIZES = {"system": 754, "pattern": 24599, "kit": 1317}
 # chunk size -> two-byte offset from the utility base
 DATA_OFFSETS = {1 << i: [1, i] for i in range(11)}
 PROGRESS_OFFSET = [1, 16]
 
 MAX_SLOT = 127
+VERIFIED_BLOB_WRITES = False
 
 
 class TransportError(RuntimeError):
@@ -80,7 +82,7 @@ def checksum(payload) -> int:
 
 def make_sysex(cmd: int, addr, data, device_id: int = DEFAULT_DEVICE_ID) -> bytes:
     payload = list(addr) + list(data)
-    return bytes([0xF0, ROLAND, device_id, *MODEL_TR8S, cmd,
+    return bytes([0xF0, ROLAND, device_id, *MODEL_TR6S, cmd,
                   *payload, checksum(payload), 0xF7])
 
 
@@ -130,7 +132,7 @@ class Transport:
     """
     A duplex rawmidi connection.
 
-    The TR-8S streams MIDI clock and active sensing continuously, so every read
+    The TR-6S streams MIDI clock and active sensing continuously, so every read
     discards bytes >= 0xF8 BEFORE judging whether data is still arriving --
     otherwise an idle timeout never expires and reads block forever.
     """
@@ -165,7 +167,7 @@ class Transport:
         try:
             self.fd = os.open(self.path, os.O_RDWR)
         except FileNotFoundError as e:
-            raise TransportError(f"{self.path} not found; is the TR-8S on?") from e
+            raise TransportError(f"{self.path} not found; is the TR-6S on?") from e
         except PermissionError as e:
             raise TransportError(
                 f"no permission on {self.path}; add your user to the 'audio' group"
@@ -178,7 +180,7 @@ class Transport:
         self._stop.clear()
         self._buf.clear()
         self._thread = threading.Thread(target=self._reader, daemon=True,
-                                        name="tr8s-reader")
+                                        name="tr6s-reader")
         self._thread.start()
 
     def _reader(self):
@@ -332,6 +334,7 @@ class Transport:
         raise TransportError("no reply to a free-tone request")
 
     def send_sample(self, address: int, pcm: bytes, settle: float = 0.004) -> bool:
+        raise TransportError("TR-6S sample uploads have not been verified")
         """
         Put raw sample bytes into sample memory at `address`.
 
@@ -350,6 +353,7 @@ class Transport:
             return self._send_chunks(pcm, settle=settle)
 
     def delete_tone(self, tone_id: int) -> bool:
+        raise TransportError("TR-6S tone deletion has not been verified")
         """
         Remove a user tone and free its sample memory.
 
@@ -422,6 +426,8 @@ class Transport:
     def read_blob(self, kind: str, index: int, timeout: float = 25.0) -> bytes | None:
         with self._io:
             """Read one blob. Read-only; safe at any time."""
+            if kind not in BLOB_SIZES:
+                raise TransportError(f"{kind} bulk reads are not verified on TR-6S")
             want = BLOB_SIZES[kind]
             addr = offset_address(UTILITY, GET_OFFSETS[kind])
             req = decode7(addr)
@@ -447,7 +453,9 @@ class Transport:
                     end = buf.rfind(0xF7)
                     buf = buf[end + 1:] if end >= 0 else buf
                 for m in msgs:
-                    if len(m) < 14 or m[7] != DT1:
+                    if (len(m) < 14 or m[:3] != bytes((0xF0, ROLAND, self.device_id))
+                            or m[3:7] != bytes(MODEL_TR6S) or m[7] != DT1
+                            or m[-1] != 0xF7 or checksum(m[8:-2]) != m[-2]):
                         continue
                     a = decode7(m[8:12])
                     body = m[12:-2]
@@ -473,6 +481,10 @@ class Transport:
           * What commit() adds is presumed durability across power-off. UNTESTED --
             it needs a power cycle to confirm.
         """
+        if not VERIFIED_BLOB_WRITES:
+            raise TransportError(
+                "TR-6S bulk writes are disabled: pattern and kit offsets and "
+                "write semantics have not been verified on this model")
         expect = BLOB_SIZES[kind]
         if len(blob) != expect:
             raise ValueError(f"{kind} blob is {len(blob)} bytes, expected {expect}")
@@ -511,6 +523,8 @@ class Transport:
         return pos == len(data)
 
     def commit(self, kind: str, slot: int):
+        if not VERIFIED_BLOB_WRITES:
+            raise TransportError("TR-6S bulk commits are disabled pending write verification")
         with self._io:
             """
             The panel's WRITE. Send it after a transfer you want to keep.

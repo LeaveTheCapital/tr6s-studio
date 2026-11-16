@@ -10,7 +10,7 @@ import time
 
 import pytest
 
-from tr8s.transport import Transport
+from tr6s.transport import Transport
 
 
 class Tracker:
@@ -124,7 +124,7 @@ def test_the_reader_delivers_clock_and_notes_in_arrival_order():
     whole point, so check the interleaving, not just that both arrive.
     """
     import os
-    from tr8s.transport import Transport
+    from tr6s.transport import Transport
 
     r, w = os.pipe()
     t = Transport.__new__(Transport)

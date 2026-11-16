@@ -12,11 +12,11 @@ import pathlib
 import pytest
 
 from fake import load_fixture_kit, make_device
-from tr8s import tools
-from tr8s.kit import COLOR_BASE, COLOR_COUNT, COLOUR_NAMES, TRACKS, Kit, KitError
-from tr8s.tools import ToolError
+from tr6s import tools
+from tr6s.kit import COLOR_BASE, COLOR_COUNT, COLOUR_NAMES, TRACKS, Kit, KitError
+from tr6s.tools import ToolError
 
-BACKUPS = pathlib.Path.home() / ".local/share/tr8s/backups/kits"
+BACKUPS = pathlib.Path.home() / ".local/share/tr6s/backups/kits"
 
 
 @pytest.fixture

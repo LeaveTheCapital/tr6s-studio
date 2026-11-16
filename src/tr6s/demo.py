@@ -142,7 +142,7 @@ class DemoTransport:
     """The Transport surface the layers above actually use, backed by memory."""
 
     def __init__(self):
-        self.path = "demo://tr8s"
+        self.path = "demo://tr6s"
         self.device_id = 0x10
         self.on_realtime = None
         self.on_channel = None

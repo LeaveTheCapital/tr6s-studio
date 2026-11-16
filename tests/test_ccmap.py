@@ -7,9 +7,9 @@ number moves the wrong knob on screen rather than silently.
 
 import pytest
 
-from tr8s.ccmap import (BEAT_CC, INSTRUMENT_CC, MASTER_CC, PARAMS, cc_for,
+from tr6s.ccmap import (BEAT_CC, INSTRUMENT_CC, MASTER_CC, PARAMS, cc_for,
                         describe, from_kit_value, label, to_kit_value)
-from tr8s.kit import TRACKS
+from tr6s.kit import TRACKS
 
 
 def test_every_instrument_has_all_four_controls():

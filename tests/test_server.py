@@ -12,12 +12,12 @@ import queue
 import pytest
 
 from fake import load_fixture_kit, load_fixture_pattern, make_device
-from tr8s import melody as melodymod
-from tr8s import tools
-from tr8s.device import DeviceError
-from tr8s.pattern import Pattern
-from tr8s.server import Hub, Studio
-from tr8s.tools import ToolError
+from tr6s import melody as melodymod
+from tr6s import tools
+from tr6s.device import DeviceError
+from tr6s.pattern import Pattern
+from tr6s.server import Hub, Studio
+from tr6s.tools import ToolError
 
 
 @pytest.fixture
@@ -353,7 +353,7 @@ def test_a_program_change_on_the_kit_channel_is_ignored_once_pinned(wired):
 
 def test_every_channel_a_program_change_arrived_on_is_recorded():
     """Seeing two channels is how the kit/pattern ambiguity becomes visible."""
-    from tr8s.monitor import Monitor
+    from tr6s.monitor import Monitor
     m = Monitor()
     m.feed_channel(bytes([0xC9, 12]))
     m.feed_channel(bytes([0xC4, 3]))
@@ -388,8 +388,8 @@ def test_the_pattern_channel_is_learned_from_the_kit_agreeing(wired):
     names -- so reading the candidates settles it.
     """
     import time
-    from tr8s.pattern import Pattern
-    from tr8s.transport import BLOB_SIZES
+    from tr6s.pattern import Pattern
+    from tr6s.transport import BLOB_SIZES
     from fake import load_fixture_kit, make_device
 
     p = Pattern.from_bytes(bytes(BLOB_SIZES["pattern"]))
@@ -460,7 +460,7 @@ def variation_studio():
 def guess(s, hits, **kw):
     """The matcher exactly as the studio uses it: Index.identify over what
     was heard, restricted to the pattern on screen."""
-    from tr8s.fingerprint import heard_set
+    from tr6s.fingerprint import heard_set
     m = s.prints.identify(heard_set(hits), only=s.slot, **kw)
     return (m.variation, m.score) if m else (None, 0.0)
 
@@ -633,7 +633,7 @@ def test_the_watchdog_recovers_once_the_machine_answers_again(wired,
     a port still held by something else, a device not yet powered. If the
     watchdog does not recover, the UI stays dead until it is restarted.
     """
-    import tr8s.server as srv
+    import tr6s.server as srv
 
     s = studio()
     s.connected = False
@@ -663,7 +663,7 @@ def test_the_watchdog_recovers_once_the_machine_answers_again(wired,
 
 def test_a_failed_connect_records_why(wired, monkeypatch):
     """"connected: false" with no reason is not something a user can act on."""
-    import tr8s.server as srv
+    import tr6s.server as srv
     s = studio()
     monkeypatch.setattr(srv, "tool_device",
                         lambda: (_ for _ in ()).throw(
@@ -809,7 +809,7 @@ def test_what_was_built_on_an_empty_pattern_is_reported_on_the_first_read(wired)
     kick line, and stops. The index knew the slot was empty, so the first
     read can say exactly what was added -- and bring TRACK to it.
     """
-    from tr8s.server import CHANGELOG
+    from tr6s.server import CHANGELOG
     s, d, t = follow_studio(slot=0)
     s.prints.add(7, "NEW", {})                    # known to be empty
     s.prints_state = "ready"
@@ -839,7 +839,7 @@ def test_an_unknown_baseline_is_not_reported_as_an_edit(wired):
     just added forty steps on ten instruments": it establishes the baseline
     silently, and only the *next* edit is reported.
     """
-    from tr8s.server import CHANGELOG
+    from tr6s.server import CHANGELOG
     s, d, t = follow_studio(slot=0)
     s._select_placeholder(5)                       # the fixture: 10 instruments
     CHANGELOG.clear()
@@ -925,7 +925,7 @@ def test_the_beat_counter_proves_playing_without_any_notes():
     alone the studio thought it was stopped, polled it, and the bulk read hung
     the port. The beat counter (CC 2) ticks only while the sequencer runs.
     """
-    from tr8s.monitor import Monitor
+    from tr6s.monitor import Monitor
     m = Monitor()
     assert m.snapshot(light=True)["playing"] is False
     m.feed_channel(bytes([0xB9, 2, 1]))
@@ -934,7 +934,7 @@ def test_the_beat_counter_proves_playing_without_any_notes():
 
 def test_a_program_change_carries_its_arrival_time():
     import time
-    from tr8s.monitor import Monitor
+    from tr6s.monitor import Monitor
     m = Monitor()
     before = time.monotonic()
     m.feed_channel(bytes([0xC9, 5]))
@@ -1057,7 +1057,7 @@ def test_a_heard_step_stays_lit_for_a_whole_bar_at_slow_tempos():
     """At 82 BPM a bar is 2.9s; a 2.2s window made the step flicker off
     mid-bar and back on at its next hit."""
     import time as _t
-    from tr8s.monitor import Monitor
+    from tr6s.monitor import Monitor
     m = Monitor()
     m.state.bpm = 82.0
     m.state.playing = True
@@ -1070,14 +1070,14 @@ def test_the_tempo_readout_does_not_wander_on_clock_jitter():
     """Clocks arriving with a few ms of USB jitter around a steady 82.0 BPM
     must read 82.0 throughout, not 81.8 / 82.3 / 81.9."""
     import random
-    from tr8s.monitor import Monitor, CLOCK
+    from tr6s.monitor import Monitor, CLOCK
     from unittest import mock
     m = Monitor()
     rnd = random.Random(7)
     period = 60.0 / 82.0 / 24
     t = 1000.0
     seen = set()
-    with mock.patch("tr8s.monitor.time.time") as clock:
+    with mock.patch("tr6s.monitor.time.time") as clock:
         for i in range(24 * 4 * 8):                # eight bars
             t += period
             clock.return_value = t + rnd.uniform(-0.003, 0.003)
@@ -1088,11 +1088,11 @@ def test_the_tempo_readout_does_not_wander_on_clock_jitter():
 
 
 def test_a_real_tempo_change_moves_the_readout():
-    from tr8s.monitor import Monitor, CLOCK
+    from tr6s.monitor import Monitor, CLOCK
     from unittest import mock
     m = Monitor()
     t = 1000.0
-    with mock.patch("tr8s.monitor.time.time") as clock:
+    with mock.patch("tr6s.monitor.time.time") as clock:
         for bpm in (120.0, 128.0):
             for _ in range(24 * 4 * 4):
                 t += 60.0 / bpm / 24
@@ -1105,13 +1105,13 @@ def test_clocks_bunched_by_a_reader_stall_do_not_move_the_tempo():
     """The reader thread stalls ~200ms now and then (measured); the clocks
     that queued up land together with one late timestamp. The estimate must
     come from the clocks that arrived on time."""
-    from tr8s.monitor import Monitor, CLOCK
+    from tr6s.monitor import Monitor, CLOCK
     from unittest import mock
     m = Monitor()
     period = 60.0 / 82.0 / 24
     t = 1000.0
     seen = set()
-    with mock.patch("tr8s.monitor.time.time") as clock:
+    with mock.patch("tr6s.monitor.time.time") as clock:
         for i in range(24 * 4 * 8):
             t += period
             stalled = (i % 60) in range(50, 57)       # 7 clocks per stall
@@ -1127,7 +1127,7 @@ def test_clocks_bunched_by_a_reader_stall_do_not_move_the_tempo():
 
 def test_a_heard_edit_is_merged_into_the_pattern_and_logged_at_once(wired):
     """The user does not stop to edit; what was heard is the pattern now."""
-    from tr8s.server import CHANGELOG
+    from tr6s.server import CHANGELOG
     steady = {"BD": "X...X...X...X..."}
     edited = {"BD": "X...X...X...X...", "SD": "....X.......X..."}
     s = _ear_studio([steady, steady, edited])
@@ -1218,7 +1218,7 @@ def test_the_ear_cannot_move_the_slot_when_the_pattern_channel_is_known(wired):
 
 def test_following_remembers_the_slot_for_the_next_start(wired):
     import time
-    from tr8s import config
+    from tr6s import config
     s, d, t = follow_studio(slot=0)
     s.start_follower()
     s._on_transport({"step": 0, "pattern": 5})
@@ -1249,7 +1249,7 @@ def test_a_pattern_the_studio_writes_is_recognisable_at_once(wired):
 def test_a_perfect_match_wins_however_close_its_sibling_is():
     """Generated tracks have sibling variations a few hits apart. An exact
     match is not a coin flip."""
-    from tr8s.fingerprint import Index, heard_set
+    from tr6s.fingerprint import Index, heard_set
     ix = Index()
     d = {"BD": "X...X...X...X...", "CH": "xoxoxoxoxoxoxoxo", "OH": "..X...X...X...X.",
          "MT": "o....o.....oxxxx", "RS": "..o...o........o", "HC": "....X.......X...",

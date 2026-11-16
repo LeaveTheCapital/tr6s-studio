@@ -45,13 +45,13 @@ function midiToNote(m) {
 
 function setTheme(name) {
   document.documentElement.dataset.theme = name;
-  try { localStorage.setItem("tr8s-theme", name); } catch {}
+  try { localStorage.setItem("tr6s-theme", name); } catch {}
   document.querySelectorAll("[data-set-theme]").forEach((b) =>
     b.setAttribute("aria-pressed", String(b.dataset.setTheme === name)));
 }
 document.querySelectorAll("[data-set-theme]").forEach((b) =>
   b.addEventListener("click", () => setTheme(b.dataset.setTheme)));
-try { setTheme(localStorage.getItem("tr8s-theme") || "phosphor"); }
+try { setTheme(localStorage.getItem("tr6s-theme") || "phosphor"); }
 catch { setTheme("phosphor"); }
 
 /* ────────────────────────────── net ──────────────────────────────── */
@@ -434,7 +434,7 @@ function setView(v) {
   $("view-panel").hidden = v !== "panel";
   $("v-grid").setAttribute("aria-pressed", String(v === "grid"));
   $("v-panel").setAttribute("aria-pressed", String(v === "panel"));
-  try { localStorage.setItem("tr8s-view", v); } catch {}
+  try { localStorage.setItem("tr6s-view", v); } catch {}
   if (v === "grid") renderGrid(); else renderPanel();
   renderKit();
 }
@@ -1384,11 +1384,11 @@ function renderFollowInst() {
 
 $("r-finst").addEventListener("click", () => {
   state.followInst = !state.followInst;
-  try { localStorage.setItem("tr8s.followInst", state.followInst ? "1" : "0"); }
+  try { localStorage.setItem("tr6s.followInst", state.followInst ? "1" : "0"); }
   catch (e) { /* storage may be unavailable; the toggle still works */ }
   renderFollowInst();
 });
-try { state.followInst = localStorage.getItem("tr8s.followInst") !== "0"; }
+try { state.followInst = localStorage.getItem("tr6s.followInst") !== "0"; }
 catch (e) { /* default on */ }
 renderFollowInst();
 
@@ -1854,7 +1854,7 @@ function connect() {
   } catch (e) {
     setStatus("server unreachable: " + e.message);
   }
-  try { setView(localStorage.getItem("tr8s-view") || "panel"); }
+  try { setView(localStorage.getItem("tr6s-view") || "panel"); }
   catch { setView("panel"); }
   connect();
   if (state.slot === null) load($("slot").value.trim());

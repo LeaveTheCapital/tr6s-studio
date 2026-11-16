@@ -30,7 +30,7 @@ import sys
 import time
 
 ROLAND = 0x41
-MODEL_TR8S = [0x00, 0x00, 0x00, 0x45]
+MODEL_TR6S = [0x00, 0x00, 0x00, 0x45]
 DT1 = 0x12
 RQ1 = 0x11
 
@@ -76,7 +76,7 @@ def checksum(payload):
 
 def make_sysex(cmd, addr, data, dev=DEV_DEFAULT):
     payload = list(addr) + list(data)
-    return bytes([0xF0, ROLAND, dev] + MODEL_TR8S + [cmd]
+    return bytes([0xF0, ROLAND, dev] + MODEL_TR6S + [cmd]
                  + payload + [checksum(payload), 0xF7])
 
 
@@ -313,7 +313,7 @@ def read_blob(port, kind, ident, timeout=25.0, verbose=True):
     return bytes(out[:want]) if out else None
 
 
-def cmd_readpattern(pid, outdir="/home/svh/tr8s/notes"):
+def cmd_readpattern(pid, outdir="/home/svh/tr6s/notes"):
     path = None
     for p in PORTS:
         if os.path.exists(p):

@@ -17,13 +17,13 @@ import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import tr8s_sysex as t      # noqa: E402
-import tr8s_write as w      # noqa: E402
-import tr8s_melody as M     # noqa: E402
+import tr6s_sysex as t      # noqa: E402
+import tr6s_write as w      # noqa: E402
+import tr6s_melody as M     # noqa: E402
 
 SLOT = 116
 ROOT = 'C3'
-BASE = '/home/svh/tr8s/notes/ctrl_test_baseline.bin'
+BASE = '/home/svh/tr6s/notes/ctrl_test_baseline.bin'
 
 # (label, drum tracks, bassline)
 STAGES = [

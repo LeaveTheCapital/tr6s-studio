@@ -2,14 +2,14 @@
 Layer 4 — command line. A thin shell over the same tool registry an LLM uses,
 so the two can never drift apart.
 
-    tr8s tools                       list every tool and its schema
-    tr8s call <tool> '<json>'        invoke one
-    tr8s info                        firmware and connection
-    tr8s patterns [lo] [hi]          list patterns
-    tr8s kits [lo] [hi]              list kits
-    tr8s tones --category BASS       search the catalogue
-    tr8s backup                      pull every pattern and kit to disk
-    tr8s capture-template <slot>     save an empty slot as the authoring base
+    tr6s tools                       list every tool and its schema
+    tr6s call <tool> '<json>'        invoke one
+    tr6s info                        firmware and connection
+    tr6s patterns [lo] [hi]          list patterns
+    tr6s kits [lo] [hi]              list kits
+    tr6s tones --category BASS       search the catalogue
+    tr6s backup                      pull every pattern and kit to disk
+    tr6s capture-template <slot>     save an empty slot as the authoring base
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ def _print(obj):
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(prog="tr8s", description=__doc__,
+    ap = argparse.ArgumentParser(prog="tr6s", description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd")
 
@@ -37,6 +37,11 @@ def main(argv=None):
     c.add_argument("args", nargs="?", default="{}")
 
     sub.add_parser("info", help="firmware and connection")
+
+    rb = sub.add_parser("read-blob", help="read an opaque TR-6S blob to a file")
+    rb.add_argument("kind", choices=("system", "pattern", "kit"))
+    rb.add_argument("slot", type=int, help="zero-based slot (system is 0)")
+    rb.add_argument("output", help="destination file; must not exist")
 
     p = sub.add_parser("patterns", help="list patterns")
     p.add_argument("lo", nargs="?", default=0)
@@ -82,6 +87,12 @@ def main(argv=None):
         ap.print_help()
         return 0
 
+    if args.cmd not in ("info", "read-blob"):
+        print("This TR-6S port currently supports only info and read-blob. "
+              "The editor commands still depend on unverified TR-8S layouts.",
+              file=sys.stderr)
+        return 2
+
     try:
         if args.cmd == "tools":
             for t in schemas():
@@ -97,7 +108,24 @@ def main(argv=None):
         if args.cmd == "call":
             _print(call(args.tool, json.loads(args.args)))
         elif args.cmd == "info":
-            _print(call("device.info"))
+            from .transport import Transport
+            with Transport() as transport:
+                firmware = transport.firmware_retry()
+                _print({"port": transport.path, **firmware})
+        elif args.cmd == "read-blob":
+            from pathlib import Path
+            from .transport import BLOB_SIZES, Transport, TransportError
+            if not 0 <= args.slot <= (0 if args.kind == "system" else 127):
+                ap.error("slot is out of range for this blob kind")
+            with Transport() as transport:
+                blob = transport.read_blob(args.kind, args.slot)
+            if blob is None or len(blob) != BLOB_SIZES[args.kind]:
+                raise TransportError(f"incomplete {args.kind} read")
+            path = Path(args.output)
+            with path.open("xb") as destination:
+                destination.write(blob)
+            _print({"kind": args.kind, "slot": args.slot,
+                    "bytes": len(blob), "output": str(path)})
         elif args.cmd == "patterns":
             _print(call("pattern.list", {"lo": args.lo, "hi": args.hi}))
         elif args.cmd == "kits":
@@ -130,7 +158,7 @@ def main(argv=None):
             path = config.data_dir() / "kit_byte_probe.json"
             if args.report:
                 if not path.exists():
-                    print("no probe results yet; run `tr8s probe-byte`",
+                    print("no probe results yet; run `tr6s probe-byte`",
                           file=sys.stderr)
                     return 1
                 print(probe_report(_json.loads(path.read_text())))
@@ -156,7 +184,7 @@ def main(argv=None):
                 _print({"template": str(config.template_path()),
                         "from_slot": args.slot, "name": p.name})
         return 0
-    except ToolError as e:
+    except (ToolError, RuntimeError) as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
     finally:

@@ -24,8 +24,8 @@ Within an instrument record:
 A probe of all 52 bytes found 51 of them writable; only +4 is rejected.
 Offsets +5, +9, +10 and +12.. are writable but not yet identified.
 
-    python3 tr8s_kit.py show 0           # dump a kit's instrument records
-    python3 tr8s_kit.py tones            # labelled tone ids from classic kits
+    python3 tr6s_kit.py show 0           # dump a kit's instrument records
+    python3 tr6s_kit.py tones            # labelled tone ids from classic kits
 """
 
 import os
@@ -33,14 +33,14 @@ import struct
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import tr8s_sysex as t   # noqa: E402
-import tr8s_write as w   # noqa: E402
+import tr6s_sysex as t   # noqa: E402
+import tr6s_write as w   # noqa: E402
 
 TRACKS = ['BD', 'SD', 'LT', 'MT', 'HT', 'RS', 'HC', 'CH', 'OH', 'CC', 'RC']
 REC_BASE = 388
 REC_STRIDE = 52
 KIT_SIZE = 1312
-KIT_DIR = "/home/svh/tr8s/backups/kits"
+KIT_DIR = "/home/svh/tr6s/backups/kits"
 
 FIELDS = {
     'tone':   (0, 2),   # uint16 LE

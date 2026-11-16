@@ -5,11 +5,11 @@ Any MCP client (Claude Desktop, Claude Code, a custom harness) can then drive
 the drum machine directly. Nothing is hardcoded here: the tool list is
 generated from `tools.REGISTRY`, so anything added there appears automatically.
 
-    tr8s-mcp                    # speaks JSON-RPC 2.0 on stdin/stdout
+    tr6s-mcp                    # speaks JSON-RPC 2.0 on stdin/stdout
 
 Claude Desktop config:
 
-    {"mcpServers": {"tr8s": {"command": "tr8s-mcp"}}}
+    {"mcpServers": {"tr6s": {"command": "tr6s-mcp"}}}
 
 MCP tool names must match ^[a-zA-Z0-9_-]{1,64}$, so the registry's dotted names
 are exposed with underscores (`pattern.set_steps` -> `pattern_set_steps`) and
@@ -29,7 +29,7 @@ from . import config
 from .tools import REGISTRY, ToolError, call, close, schemas
 
 PROTOCOL_VERSIONS = ("2025-06-18", "2025-03-26", "2024-11-05")
-SERVER_INFO = {"name": "tr8s", "version": "0.1.0"}
+SERVER_INFO = {"name": "tr6s", "version": "0.1.0"}
 
 
 def _mcp_name(name: str) -> str:
@@ -44,28 +44,28 @@ def _registry_name(mcp_name: str) -> str | None:
 
 
 def log(msg: str):
-    print(f"[tr8s-mcp] {msg}", file=sys.stderr, flush=True)
+    print(f"[tr6s-mcp] {msg}", file=sys.stderr, flush=True)
 
 
 # ------------------------------------------------------------------ resources
 
 RESOURCES = [
     {
-        "uri": "tr8s://device/state",
+        "uri": "tr6s://device/state",
         "name": "Device state",
         "description": "Firmware, connection, and the currently selected "
                        "pattern and kit if they can be read.",
         "mimeType": "application/json",
     },
     {
-        "uri": "tr8s://tones/catalog",
+        "uri": "tr6s://tones/catalog",
         "name": "Tone catalogue",
         "description": "Every melodic tone measured for its real root pitch, "
                        "loudness, decay and brightness.",
         "mimeType": "application/json",
     },
     {
-        "uri": "tr8s://docs/constraints",
+        "uri": "tr6s://docs/constraints",
         "name": "Hardware constraints",
         "description": "Things software cannot change about the TR-8S. Read "
                        "this before promising a user something.",
@@ -107,13 +107,13 @@ CONSTRAINTS = """\
 
 
 def read_resource(uri: str) -> dict:
-    if uri == "tr8s://tones/catalog":
+    if uri == "tr6s://tones/catalog":
         p = config.tone_catalog_path()
         text = p.read_text() if p.exists() else "{}"
         return {"uri": uri, "mimeType": "application/json", "text": text}
-    if uri == "tr8s://docs/constraints":
+    if uri == "tr6s://docs/constraints":
         return {"uri": uri, "mimeType": "text/markdown", "text": CONSTRAINTS}
-    if uri == "tr8s://device/state":
+    if uri == "tr6s://device/state":
         try:
             state = call("device.info")
         except Exception as e:  # device may simply be unplugged
@@ -149,7 +149,7 @@ class Server:
                     "serverInfo": SERVER_INFO,
                     "instructions": (
                         "Controls a Roland TR-8S drum machine over USB. Read "
-                        "tr8s://docs/constraints before promising anything: "
+                        "tr6s://docs/constraints before promising anything: "
                         "several limits (MOTION [ON], sample-only Coarse Tune, "
                         "fader-owned level) cannot be worked around in software."
                     ),

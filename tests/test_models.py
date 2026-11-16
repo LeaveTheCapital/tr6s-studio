@@ -7,10 +7,10 @@ import struct
 
 import pytest
 
-from tr8s import melody as M
-from tr8s.kit import Kit, KitError
-from tr8s.pattern import BLOCK, HEADER, SIZE, Pattern, PatternError
-from tr8s.transport import (checksum, decode7, encode7, make_sysex,
+from tr6s import melody as M
+from tr6s.kit import Kit, KitError
+from tr6s.pattern import BLOCK, HEADER, SIZE, Pattern, PatternError
+from tr6s.transport import (checksum, decode7, encode7, make_sysex,
                             offset_address, pack7, split_sysex, unpack7)
 
 

@@ -9,9 +9,9 @@ device being unreadable, and a new edit has to discard the redo branch.
 import pytest
 
 from fake import load_fixture_kit, load_fixture_pattern, make_device
-from tr8s import tools
-from tr8s.history import HISTORY, History
-from tr8s.tools import ToolError
+from tr6s import tools
+from tr6s.history import HISTORY, History
+from tr6s.tools import ToolError
 
 
 @pytest.fixture

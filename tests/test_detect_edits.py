@@ -1,5 +1,5 @@
 """The heard-diff that spots a panel step edit while the machine plays."""
-from tr8s.monitor import detect_edits
+from tr6s.monitor import detect_edits
 
 
 def row(*steps, vel=100, when=100.0):

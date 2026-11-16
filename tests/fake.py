@@ -14,9 +14,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from tr8s.kit import TRACKS as KIT_TRACKS
-from tr8s.kit import Kit
-from tr8s.transport import BLOB_SIZES
+from tr6s.kit import TRACKS as KIT_TRACKS
+from tr6s.kit import Kit
+from tr6s.transport import BLOB_SIZES
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -29,7 +29,7 @@ class FakeTransport:
     """Mimics the Transport surface the layers above actually use."""
 
     def __init__(self, patterns=None, kits=None, fader_level=200):
-        self.path = "fake://tr8s"
+        self.path = "fake://tr6s"
         self.device_id = 0x10
         self.on_realtime = None
         self.on_channel = None
@@ -121,7 +121,7 @@ def load_empty_kit() -> bytes:
 
 def make_device(patterns=None, kits=None):
     """A Device wired to a FakeTransport, pre-loaded with fixtures."""
-    from tr8s.device import Device
+    from tr6s.device import Device
     pats = patterns if patterns is not None else {0: load_fixture_pattern()}
     kts = kits if kits is not None else {0: load_fixture_kit()}
     t = FakeTransport(patterns=pats, kits=kts)

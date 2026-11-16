@@ -18,9 +18,9 @@ import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import tr8s_sysex as t   # noqa: E402
-import tr8s_write as w   # noqa: E402
-import tr8s_kit as k     # noqa: E402
+import tr6s_sysex as t   # noqa: E402
+import tr6s_write as w   # noqa: E402
+import tr6s_kit as k     # noqa: E402
 import pitch as P        # noqa: E402
 
 NOTE = {'BD': 36, 'RS': 37, 'SD': 38, 'HC': 39, 'CH': 42, 'LT': 43,

@@ -13,8 +13,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 # on a developer's laptop would pass or fail depending on what their TR-8S had
 # told it. Anything that genuinely wants the real catalogue or backups reads
 # them through an explicit path and is skipped when they are absent.
-_TMP = Path(tempfile.mkdtemp(prefix="tr8s-tests-"))
-os.environ["TR8S_DATA"] = str(_TMP)
+_TMP = Path(tempfile.mkdtemp(prefix="tr6s-tests-"))
+os.environ["TR6S_DATA"] = str(_TMP)
 
 # A fixed 117-tone catalogue, so anything that chooses sounds by measurement
 # chooses from the same set on every machine. Without it kit.auto_build either

@@ -24,9 +24,9 @@ from __future__ import annotations
 import struct
 from dataclasses import dataclass, field
 
-TRACKS = ["BD", "SD", "LT", "MT", "HT", "RS", "HC", "CH", "OH", "CC", "RC"]
+TRACKS = ["BD", "SD", "LT", "HC", "CH", "OH"]
 
-SIZE = 1312
+SIZE = 1317
 REC_BASE = 388
 REC_STRIDE = 52
 # Bytes carrying a sample's envelope and gain. Measured across 669 ACB and 170
@@ -95,6 +95,7 @@ class Kit:
 
     @staticmethod
     def record_offset(inst: str) -> int:
+        raise KitError("TR-6S instrument blob offsets are not verified")
         if inst not in TRACKS:
             raise KitError(f"unknown instrument {inst!r}; expected one of {TRACKS}")
         return REC_BASE + TRACKS.index(inst) * REC_STRIDE
@@ -138,9 +139,11 @@ class Kit:
 
     def color(self, inst: str) -> int:
         """The instrument's fader colour index, 0..11. See COLOR_BASE."""
+        raise KitError("TR-6S colour blob offsets are not verified")
         return self.raw[COLOR_BASE + TRACKS.index(inst)]
 
     def set_color(self, inst: str, index: int):
+        raise KitError("TR-6S colour blob offsets are not verified")
         if not 0 <= int(index) < COLOR_COUNT:
             raise KitError(f"colour must be 0..{COLOR_COUNT - 1}")
         self.raw[COLOR_BASE + TRACKS.index(inst)] = int(index)
@@ -175,6 +178,7 @@ class Kit:
         self.raw[o:o + REC_STRIDE] = donor.raw[d:d + REC_STRIDE]
 
     def describe(self) -> dict:
+        raise KitError("TR-6S instrument blob offsets are not verified")
         out = {"name": self.name, "instruments": {}}
         for inst in TRACKS:
             out["instruments"][inst] = {

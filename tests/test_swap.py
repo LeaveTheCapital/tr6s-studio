@@ -5,8 +5,8 @@ assertions are about the ranking rules, not this machine's library.
 
 import pytest
 
-from tr8s.swap import by_description, neighbours, parse
-from tr8s.tones import Catalog, Tone
+from tr6s.swap import by_description, neighbours, parse
+from tr6s.tones import Catalog, Tone
 
 
 def tone(id, name, cat, centroid, decay=100, hz=100.0, peak=0.5, sustained=False):

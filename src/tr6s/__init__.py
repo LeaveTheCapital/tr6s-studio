@@ -1,5 +1,5 @@
 """
-tr8s — drive a Roland TR-8S over USB: patterns, kits, melodies.
+tr6s — drive a Roland TR-8S over USB: patterns, kits, melodies.
 
 Layers, lowest first:
 
@@ -14,7 +14,7 @@ Layers, lowest first:
 
 Typical use:
 
-    from tr8s.tools import call, schemas
+    from tr6s.tools import call, schemas
     call("tones.search", {"category": "BASS", "melodic": True})
     call("pattern.set_melody", {"slot": "8-07", "variation": "C",
                                 "instrument": "LT",

@@ -5,9 +5,9 @@ import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import tr8s_sysex as t  # noqa: E402
+import tr6s_sysex as t  # noqa: E402
 
-OUT = "/home/svh/tr8s/backups/patterns"
+OUT = "/home/svh/tr6s/backups/patterns"
 
 
 def main():

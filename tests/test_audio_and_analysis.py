@@ -11,8 +11,8 @@ import wave
 
 import pytest
 
-from tr8s import audio
-from tr8s.analysis import interpret
+from tr6s import audio
+from tr6s.analysis import interpret
 
 
 def tone(freq, seconds=0.3, rate=6000, amp=0.5, harmonic=0.0):
@@ -169,7 +169,7 @@ def test_interpret_never_claims_high_confidence_without_pitch():
 
 # ------------------------------------------------------------ probe reporting
 
-from tr8s.analysis import KNOWN_KIT_OFFSETS, SAMPLE_REGION, probe_report
+from tr6s.analysis import KNOWN_KIT_OFFSETS, SAMPLE_REGION, probe_report
 
 
 def test_known_offsets_are_excluded_from_probing():
@@ -231,8 +231,8 @@ def test_default_probe_tone_is_suitable():
     oscillator (unambiguous pitch), sustained (so envelope changes show), and
     harmonically rich (so a filter moves the centroid).
     """
-    from tr8s.analysis import DEFAULT_PROBE_TONE
-    from tr8s.tones import Catalog
+    from tr6s.analysis import DEFAULT_PROBE_TONE
+    from tr6s.tones import Catalog
     cat = Catalog.load()
     t = cat.get(DEFAULT_PROBE_TONE)
     if t is None:
@@ -245,7 +245,7 @@ def test_default_probe_tone_is_suitable():
 
 # ------------------------------------------------------ monotonicity checks
 
-from tr8s.analysis import _rank_corr
+from tr6s.analysis import _rank_corr
 
 
 def test_rank_correlation_finds_a_trend():
@@ -309,7 +309,7 @@ def test_signals_always_report_the_trends():
         assert k in r["signals"]
 
 
-from tr8s.analysis import _step_dominance
+from tr6s.analysis import _step_dominance
 
 
 def test_step_dominance_spots_a_switch():

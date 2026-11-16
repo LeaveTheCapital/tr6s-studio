@@ -3,12 +3,12 @@ Runtime configuration. No paths are hardcoded to any one machine.
 
 Resolution order for the data directory (backups, tone catalogue, templates):
 
-    1. $TR8S_DATA
-    2. $XDG_DATA_HOME/tr8s
-    3. ~/.local/share/tr8s
+    1. $TR6S_DATA
+    2. $XDG_DATA_HOME/tr6s
+    3. ~/.local/share/tr6s
 
-The MIDI device can be overridden with $TR8S_PORT; otherwise the first Roland
-TR-8S rawmidi node is discovered automatically.
+The MIDI device can be overridden with $TR6S_PORT; otherwise the first Roland
+TR-6S rawmidi node is discovered automatically.
 """
 
 from __future__ import annotations
@@ -16,11 +16,11 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-APP = "tr8s"
+APP = "tr6s"
 
 
 def data_dir() -> Path:
-    env = os.environ.get("TR8S_DATA")
+    env = os.environ.get("TR6S_DATA")
     if env:
         p = Path(env).expanduser()
     else:
@@ -86,15 +86,15 @@ def save_settings(values: dict):
 
 
 def find_port() -> str:
-    """Locate the TR-8S rawmidi device node."""
-    env = os.environ.get("TR8S_PORT")
+    """Locate the TR-6S rawmidi device node."""
+    env = os.environ.get("TR6S_PORT")
     if env:
         return env
-    # /proc/asound/cardN/midiM names the device; match the TR-8S
+    # /proc/asound/cardN/midiM names the device; match the TR-6S
     for card in sorted(Path("/proc/asound").glob("card*")):
         for midi in sorted(card.glob("midi*")):
             try:
-                if "TR-8S" in midi.read_text():
+                if "TR-6S" in midi.read_text():
                     n = card.name.replace("card", "")
                     d = midi.name.replace("midi", "")
                     node = Path(f"/dev/snd/midiC{n}D{d}")
@@ -102,17 +102,15 @@ def find_port() -> str:
                         return str(node)
             except OSError:
                 continue
-    for node in sorted(Path("/dev/snd").glob("midiC*D*")):
-        return str(node)
     raise RuntimeError(
-        "no TR-8S MIDI device found. Is it connected and powered on? "
-        "Override with TR8S_PORT=/dev/snd/midiCxDy"
+        "no TR-6S MIDI device found. Is it connected and powered on? "
+        "Override with TR6S_PORT=/dev/snd/midiCxDy"
     )
 
 
 def find_audio_device() -> str:
-    """ALSA capture device for the TR-8S's own audio stream."""
-    env = os.environ.get("TR8S_AUDIO")
+    """ALSA capture device for the TR-6S's own audio stream."""
+    env = os.environ.get("TR6S_AUDIO")
     if env:
         return env
     try:
@@ -120,7 +118,7 @@ def find_audio_device() -> str:
     except OSError:
         return "hw:1,0"
     for line in cards.splitlines():
-        if "TR-8S" in line or "TR8S" in line:
+        if "TR-6S" in line or "TR6S" in line:
             num = line.strip().split()[0]
             return f"hw:{num},0"
     return "hw:1,0"

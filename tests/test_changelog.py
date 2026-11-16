@@ -3,7 +3,7 @@
 import pathlib
 import tempfile
 
-from tr8s.changelog import Change, ChangeLog
+from tr6s.changelog import Change, ChangeLog
 
 
 def fresh():
@@ -85,7 +85,7 @@ def test_the_line_reads_as_a_human_sentence():
 
 def test_a_knob_sweep_logs_one_net_gesture():
     """A hundred CCs of one turn collapse to a single start->end line."""
-    from tr8s.changelog import ChangeLog
+    from tr6s.changelog import ChangeLog
     cl = ChangeLog(); cl.enabled = True
     for v in (20, 25, 31, 38, 45):
         cl.add("user", "knob", instrument="BD",
@@ -100,7 +100,7 @@ def test_interleaved_controls_still_coalesce():
     """The machine streams CTRL and LEVEL motion together while playing;
     alternating keys must each fold into their own line, and a value that
     does not change adds nothing."""
-    from tr8s.changelog import ChangeLog
+    from tr6s.changelog import ChangeLog
     log = ChangeLog(path=None) if "path" in ChangeLog.__init__.__code__.co_varnames else ChangeLog()
     log.clear()
     for i in range(20):

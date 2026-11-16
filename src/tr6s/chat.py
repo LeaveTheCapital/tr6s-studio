@@ -178,7 +178,7 @@ def available() -> tuple[bool, str]:
     if (Path.home() / ".config" / "anthropic").exists():
         return True, "ready (using an ant auth profile)"
     return False, ("no credentials: set ANTHROPIC_API_KEY, or run `ant auth login`. "
-                   "You can also connect any MCP client to `tr8s-mcp` instead, "
+                   "You can also connect any MCP client to `tr6s-mcp` instead, "
                    "which needs no key here.")
 
 

@@ -13,7 +13,7 @@ sequencer grid, so INST REC captures them cleanly with no drift.
 
 Typical use, per variation:
     1. On the TR-8S: select the pattern slot and variation, press [INST REC]
-    2. Run:  python3 tr8s_send.py play techno B_main
+    2. Run:  python3 tr6s_send.py play techno B_main
     3. Press [START/STOP] on the TR-8S -- the script is already waiting
     4. It stops itself after exactly one pass
 """
@@ -262,12 +262,12 @@ def main():
                 print(f"    {n}")
     elif cmd == "play":
         if len(sys.argv) < 4:
-            sys.exit("usage: tr8s_send.py play GENRE VARIATION")
+            sys.exit("usage: tr6s_send.py play GENRE VARIATION")
         play(sys.argv[2], sys.argv[3],
              int(sys.argv[4]) if len(sys.argv) > 4 else 1)
     elif cmd == "session":
         if len(sys.argv) < 3:
-            sys.exit("usage: tr8s_send.py session GENRE [VAR,VAR,...]")
+            sys.exit("usage: tr6s_send.py session GENRE [VAR,VAR,...]")
         vars_ = sys.argv[3].split(",") if len(sys.argv) > 3 else None
         session(sys.argv[2], vars_)
     else:

@@ -21,7 +21,7 @@ import sys
 HEADER = 144
 BLOCK = 2436
 NBLOCK = 10
-DUMPS = "/home/svh/tr8s/backups/patterns"
+DUMPS = "/home/svh/tr6s/backups/patterns"
 
 
 def blocks(blob):

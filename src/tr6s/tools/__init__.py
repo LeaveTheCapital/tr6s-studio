@@ -6,7 +6,7 @@ an HTTP layer, or a CLI) can drive the TR-8S without knowing anything about
 SysEx. Tools take and return plain JSON-serialisable values, and raise
 ToolError with an actionable message rather than leaking byte offsets.
 
-    from tr8s.tools import REGISTRY, call, schemas
+    from tr6s.tools import REGISTRY, call, schemas
     schemas()                       -> list of JSON schemas
     call("pattern.get", {"slot": 0})
 

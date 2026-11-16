@@ -204,7 +204,7 @@ def build(style: str = "techno", key: str = "C minor", seed: int | None = None,
     cat = Catalog.load() if catalog is None else catalog
     tones = list(cat.tones.values())
     if not tones:
-        raise ValueError("the tone catalogue is empty; run `tr8s analyse-tones`")
+        raise ValueError("the tone catalogue is empty; run `tr6s analyse-tones`")
 
     if seed is None:
         seed = random.randrange(1 << 30)    # report it, so a kit can be re-made

@@ -26,7 +26,7 @@ import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import tr8s_sysex as t  # noqa: E402
+import tr6s_sysex as t  # noqa: E402
 from gen_patterns import LIBRARY, VEL  # noqa: E402
 
 HEADER = 144
@@ -40,7 +40,7 @@ TRACKS = ['BD', 'SD', 'LT', 'MT', 'HT', 'RS', 'HC', 'CH', 'OH', 'CC', 'RC']
 SEND_OFFSET = {"pattern": 0x40, "kit": 0x50}
 WRITE_OFFSET = {"pattern": 0x01, "kit": 0x02}
 
-TEMPLATE = "/home/svh/tr8s/backups/patterns/pattern_116.bin"  # known-empty slot
+TEMPLATE = "/home/svh/tr6s/backups/patterns/pattern_116.bin"  # known-empty slot
 
 
 # ------------------------------------------------------------------ authoring
@@ -236,7 +236,7 @@ def write_pattern(slot, genre, name=None, verify=True):
 def main():
     if len(sys.argv) < 3:
         print(__doc__)
-        print("usage: tr8s_write.py SLOT GENRE [NAME]")
+        print("usage: tr6s_write.py SLOT GENRE [NAME]")
         print(f"genres: {', '.join(LIBRARY)}")
         return
     slot = int(sys.argv[1])

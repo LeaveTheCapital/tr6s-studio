@@ -341,5 +341,5 @@ class Device:
             return Pattern.from_bytes(p.read_bytes())
         raise DeviceError(
             f"no pattern template at {p}. Capture one from an empty slot with "
-            f"`tr8s capture-template <slot>`"
+            f"`tr6s capture-template <slot>`"
         )

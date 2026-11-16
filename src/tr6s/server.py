@@ -5,7 +5,7 @@ Stdlib only: ThreadingHTTPServer plus Server-Sent Events for live updates.
 SSE rather than WebSockets because the live traffic is one-directional (device
 -> browser) and SSE reconnects on its own.
 
-    tr8s-studio                 # http://127.0.0.1:8733
+    tr6s-studio                 # http://127.0.0.1:8733
 
 Routes
     GET  /                      the UI
@@ -201,7 +201,7 @@ class Studio:
         pattern's fingerprint until the machine stopped and the slot was
         re-read, and the variation readout stayed dead while it played.
         """
-        if getattr(dev, "_tr8s_watched", False):
+        if getattr(dev, "_tr6s_watched", False):
             return
         orig = getattr(dev, "remember", None)
         if orig is None:
@@ -222,7 +222,7 @@ class Studio:
                 pass
 
         dev.remember = remember
-        dev._tr8s_watched = True
+        dev._tr6s_watched = True
 
     def _save_prints_if_dirty(self):
         if getattr(self, "_prints_dirty", False):
@@ -257,7 +257,7 @@ class Studio:
                             pass
         if self._watchdog is None:
             self._watchdog = threading.Thread(target=run, daemon=True,
-                                              name="tr8s-watchdog")
+                                              name="tr6s-watchdog")
             self._watchdog.start()
 
     # ------------------------------------------- which variation is playing
@@ -609,7 +609,7 @@ class Studio:
                               "have": len(ix)})
         if self.prints_state != "building":
             threading.Thread(target=run, daemon=True,
-                             name="tr8s-prints").start()
+                             name="tr6s-prints").start()
 
     def start_after_stop_reader(self):
         """
@@ -659,7 +659,7 @@ class Studio:
                         self._reprint(slot)
                 except Exception:
                     pass
-        threading.Thread(target=run, daemon=True, name="tr8s-after-stop").start()
+        threading.Thread(target=run, daemon=True, name="tr6s-after-stop").start()
 
     def missing_prints(self) -> list[int]:
         """Slots the fingerprint index has never managed to read."""
@@ -1063,7 +1063,7 @@ class Studio:
                         pass
         if self._listener is None:
             self._listener = threading.Thread(target=run, daemon=True,
-                                              name="tr8s-listen")
+                                              name="tr6s-listen")
             self._listener.start()
 
     def start_follower(self):
@@ -1119,7 +1119,7 @@ class Studio:
                         break
         if self._follower is None:
             self._follower = threading.Thread(target=run, daemon=True,
-                                              name="tr8s-follow")
+                                              name="tr6s-follow")
             self._follower.start()
 
     def _select_from_cache(self, slot: int) -> bool:
@@ -1312,7 +1312,7 @@ class Studio:
 
         if self.index_state == "building":
             return
-        threading.Thread(target=run, daemon=True, name="tr8s-index").start()
+        threading.Thread(target=run, daemon=True, name="tr6s-index").start()
 
     @staticmethod
     def _melodies(p, kit) -> dict:
@@ -1769,7 +1769,7 @@ def _log_tool_change(source: str, name: str, args: dict, result):
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "tr8s-studio"
+    server_version = "tr6s-studio"
 
     def log_message(self, fmt, *args):
         pass          # quiet; errors are reported explicitly
@@ -2102,7 +2102,7 @@ class Handler(BaseHTTPRequestHandler):
 
 def main(argv=None):
     import argparse
-    ap = argparse.ArgumentParser(prog="tr8s-studio")
+    ap = argparse.ArgumentParser(prog="tr6s-studio")
     ap.add_argument("--port", type=int, default=DEFAULT_PORT)
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--slot", default=None,
@@ -2153,7 +2153,7 @@ def main(argv=None):
 
     srv = ThreadingHTTPServer((args.host, args.port), Handler)
     srv.daemon_threads = True
-    print(f"\n  tr8s studio -> http://{args.host}:{args.port}\n", flush=True)
+    print(f"\n  tr6s studio -> http://{args.host}:{args.port}\n", flush=True)
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

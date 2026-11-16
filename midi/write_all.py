@@ -16,8 +16,8 @@ import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import tr8s_sysex as t          # noqa: E402
-import tr8s_write as w          # noqa: E402
+import tr6s_sysex as t          # noqa: E402
+import tr6s_write as w          # noqa: E402
 from styles import STYLES, validate  # noqa: E402
 
 # Panel-friendly 16-character names
@@ -62,7 +62,7 @@ KITS = {
 def kit_names():
     import os
     out = {}
-    d = "/home/svh/tr8s/backups/kits"
+    d = "/home/svh/tr6s/backups/kits"
     for k in set(KITS.values()):
         f = os.path.join(d, f"kit_{k:03d}.bin")
         if os.path.exists(f):

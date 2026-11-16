@@ -31,7 +31,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import tr8s_write as w   # noqa: E402
+import tr6s_write as w   # noqa: E402
 
 HEADER = 144
 BLOCK = 2436

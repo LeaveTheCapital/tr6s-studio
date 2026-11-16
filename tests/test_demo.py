@@ -9,11 +9,11 @@ tracks can actually play a melody.
 
 import pytest
 
-from tr8s import demo, tools
-from tr8s.kit import Kit
-from tr8s.melody import note_to_midi
-from tr8s.pattern import Pattern
-from tr8s.transport import BLOB_SIZES
+from tr6s import demo, tools
+from tr6s.kit import Kit
+from tr6s.melody import note_to_midi
+from tr6s.pattern import Pattern
+from tr6s.transport import BLOB_SIZES
 
 
 @pytest.fixture
@@ -108,5 +108,5 @@ def test_blobs_are_the_documented_sizes(offline):
 
 
 def test_demo_tones_cover_every_track():
-    from tr8s.kit import TRACKS
+    from tr6s.kit import TRACKS
     assert set(demo.DEMO_TONES_BY_TRACK) == set(TRACKS)

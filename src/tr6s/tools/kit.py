@@ -237,7 +237,7 @@ def kit_balance(slot):
             out["possible_masking"] = clashes
     if unknown:
         out["note"] = ("some tones are not in the catalogue; run "
-                       "`tr8s analyse-tones` to measure them")
+                       "`tr6s analyse-tones` to measure them")
     return out
 
 
@@ -620,7 +620,7 @@ def sample_fetch(url, name=None, assign_to=None, slot=None, reuse_tone=None,
     stem = Path(urlparse(url).path).stem or "sample"
     dest = dest_dir / f"{stem}-{hashlib.sha1(url.encode()).hexdigest()[:8]}.wav"
     if not dest.is_file():
-        req = urllib.request.Request(url, headers={"User-Agent": "tr8s-studio/1.0"})
+        req = urllib.request.Request(url, headers={"User-Agent": "tr6s-studio/1.0"})
         try:
             with urllib.request.urlopen(req, timeout=30) as r:
                 ctype = (r.headers.get("Content-Type") or "").lower()

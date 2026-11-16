@@ -15,8 +15,8 @@ import types
 import pytest
 
 from fake import load_fixture_kit, load_fixture_pattern, make_device
-from tr8s import chat as chatmod
-from tr8s import tools
+from tr6s import chat as chatmod
+from tr6s import tools
 
 
 class Block:

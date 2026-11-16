@@ -8,9 +8,9 @@ happens to have.
 
 import pytest
 
-from tr8s.kitbuild import (BASE, SCALES, STYLE_TARGETS, Target, build,
+from tr6s.kitbuild import (BASE, SCALES, STYLE_TARGETS, Target, build,
                            scale_pitches, score)
-from tr8s.tones import Catalog, Tone
+from tr6s.tones import Catalog, Tone
 
 
 def tone(id, name, cat, centroid, decay=100, root=None, type=1,
@@ -216,7 +216,7 @@ def test_the_lead_sits_above_the_bass():
     tracks = p["melodic_tracks"]
     if len(tracks) < 2:
         pytest.skip("only one melodic track was placed")
-    from tr8s.melody import note_to_midi
+    from tr6s.melody import note_to_midi
     bass, lead = (p["instruments"][t] for t in tracks[:2])
     assert note_to_midi(lead["root"]) > note_to_midi(bass["root"])
 

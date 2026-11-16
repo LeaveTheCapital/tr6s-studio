@@ -10,8 +10,8 @@ import json
 import pytest
 
 from fake import load_fixture_kit, load_fixture_pattern, make_device
-from tr8s import tools
-from tr8s.tools import ToolError, _library_dir
+from tr6s import tools
+from tr6s.tools import ToolError, _library_dir
 
 
 @pytest.fixture
@@ -111,6 +111,6 @@ def test_names_are_case_insensitive(wired):
 
 
 def test_the_library_directory_is_the_repo_one():
-    from tr8s.tools._core import _library_dir
+    from tr6s.tools._core import _library_dir
     d = _library_dir()
     assert d.name == "library" and (d / "acidtrax.json").is_file(), d

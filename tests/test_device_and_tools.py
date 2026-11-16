@@ -9,11 +9,11 @@ import pytest
 
 from fake import (FakeTransport, load_empty_kit, load_fixture_kit,
                   load_fixture_pattern, make_device)
-from tr8s import tools
-from tr8s.tools import ToolError
-from tr8s.device import Device, DeviceError, panel_to_slot, slot_to_panel
-from tr8s.kit import Kit
-from tr8s.pattern import Pattern
+from tr6s import tools
+from tr6s.tools import ToolError
+from tr6s.device import Device, DeviceError, panel_to_slot, slot_to_panel
+from tr6s.kit import Kit
+from tr6s.pattern import Pattern
 
 
 # ------------------------------------------------------------------ numbering
@@ -84,8 +84,8 @@ def test_kit_write_ignores_level_when_verifying():
 
 
 def test_backup_and_restore(tmp_path, monkeypatch):
-    from tr8s import config
-    monkeypatch.setenv("TR8S_DATA", str(tmp_path))
+    from tr6s import config
+    monkeypatch.setenv("TR6S_DATA", str(tmp_path))
     monkeypatch.setattr(config, "data_dir", lambda: tmp_path)
     d, t = make_device(patterns={0: load_fixture_pattern(), 1: load_fixture_pattern()},
                        kits={0: load_fixture_kit()})
@@ -249,7 +249,7 @@ def test_results_are_json_serialisable(wired):
 
 
 def test_mcp_name_mapping_is_bijective():
-    from tr8s import mcp_server
+    from tr6s import mcp_server
     flat = [mcp_server._mcp_name(n) for n in tools.REGISTRY]
     assert len(set(flat)) == len(flat), "flattened tool names must stay unique"
     for real in tools.REGISTRY:
@@ -260,7 +260,7 @@ def test_mcp_name_mapping_is_bijective():
 
 def _with_sample_params(kit_blob: bytes, inst: str) -> bytes:
     """A kit whose `inst` record carries sample parameters, as the device writes."""
-    from tr8s.kit import Kit
+    from tr6s.kit import Kit
     k = Kit.from_bytes(kit_blob)
     o = Kit.record_offset(inst)
     # exactly what the device writes when a sample tone is assigned
@@ -283,7 +283,7 @@ def test_find_sample_donor_returns_none_when_there_is_no_donor():
 
 def test_assigning_a_sample_tone_inherits_a_donor_record(monkeypatch):
     """This is the bug that once made a whole kit inaudible."""
-    from tr8s.tones import Tone
+    from tr6s.tones import Tone
     plain = load_empty_kit()
     donor = _with_sample_params(plain, "LT")
     d, _ = make_device(kits={0: plain, 5: donor})
@@ -304,7 +304,7 @@ def test_assigning_a_sample_tone_inherits_a_donor_record(monkeypatch):
 
 
 def test_auto_donor_can_be_turned_off(monkeypatch):
-    from tr8s.tones import Tone
+    from tr6s.tones import Tone
     d, _ = make_device(kits={0: load_empty_kit()})
     monkeypatch.setattr(d, "read_tone",
                         lambda tid: Tone(id=tid, name="Fake", cat="BASS", type=2))
@@ -320,7 +320,7 @@ def test_auto_donor_can_be_turned_off(monkeypatch):
 
 
 def test_acb_tone_needs_no_donor(monkeypatch):
-    from tr8s.tones import Tone
+    from tr6s.tones import Tone
     d, _ = make_device(kits={0: load_fixture_kit()})
     monkeypatch.setattr(d, "read_tone",
                         lambda tid: Tone(id=tid, name="909 Bass", cat="BD", type=1))
@@ -381,7 +381,7 @@ def test_kit_balance_reports_unmeasured_without_a_catalogue(wired):
 
 
 def test_kit_balance_uses_measured_peaks(wired, monkeypatch):
-    from tr8s.tones import Catalog, Tone
+    from tr6s.tones import Catalog, Tone
     d, _ = wired
     k = d.read_kit(0)
     tones = {}

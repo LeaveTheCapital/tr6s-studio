@@ -3,7 +3,7 @@
 Pattern-follow reads Program Change; while the machine plays, a clock byte can
 land between the PC status byte and its value, ending one reader payload and
 starting the next. Parsed per-payload the PC was dropped and follow died."""
-from tr8s.monitor import Monitor
+from tr6s.monitor import Monitor
 
 
 def test_a_program_change_split_across_two_payloads_is_reassembled():

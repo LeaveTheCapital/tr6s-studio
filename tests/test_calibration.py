@@ -9,9 +9,9 @@ returning byte 0, which measured louder and longer than its neighbours.
 import pytest
 
 from fake import load_fixture_kit, load_fixture_pattern, make_device
-from tr8s import tools
-from tr8s.tools import ToolError
-from tr8s.calibration import (DECAY_CURVE, DECAY_MAX_BYTE, DECAY_MAX_MS,
+from tr6s import tools
+from tr6s.tools import ToolError
+from tr6s.calibration import (DECAY_CURVE, DECAY_MAX_BYTE, DECAY_MAX_MS,
                               DECAY_MIN_BYTE, DECAY_MIN_MS, SUSTAIN_BYTES,
                               decay_byte_for_ms, decay_ms_for_byte,
                               describe_decay)
@@ -123,7 +123,7 @@ def test_the_calibration_tool_exposes_the_caveat(wired):
 
 # --------------------------------------------------------------------- tune
 
-from tr8s.calibration import (TUNE_MEASURED, TUNE_SEMITONE_RANGE,
+from tr6s.calibration import (TUNE_MEASURED, TUNE_SEMITONE_RANGE,
                               describe_tune, tune_byte_for_semitones,
                               tune_reaches, tune_semitones_for_byte)
 
@@ -165,7 +165,7 @@ def test_the_tune_scale_is_not_the_motion_tune_scale():
     Two different fields with two different laws. Reusing one constant for the
     other transposes every fine-mode melody.
     """
-    from tr8s.melody import FINE_UNITS_PER_SEMITONE
+    from tr6s.melody import FINE_UNITS_PER_SEMITONE
     kit_units_per_semitone = 255.0 / (2 * TUNE_SEMITONE_RANGE)
     assert abs(kit_units_per_semitone - FINE_UNITS_PER_SEMITONE) > 5
 

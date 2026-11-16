@@ -18,8 +18,8 @@ import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import tr8s_sysex as t   # noqa: E402
-import tr8s_kit as k     # noqa: E402
+import tr6s_sysex as t   # noqa: E402
+import tr6s_kit as k     # noqa: E402
 
 CATS = ['IMPORT', 'BD', 'SD', 'TOM', 'RS', 'HC', 'CH/OH', 'CC/RC', 'PERC1',
         'PERC2', 'PERC3', 'PERC4', 'PERC5', 'FX/HIT', 'VOICE', 'SYNTH1',
@@ -70,7 +70,7 @@ def set_tone(inst, tone_id, kit_id=61, decay=None, tune=None):
             k.put(blob, inst, 'tune', tune)
         blob = bytes(blob)
 
-        import tr8s_write as w
+        import tr6s_write as w
         w.send_blob(port, 'kit', kit_id, blob, verbose=False)
         w.commit(port, 'kit', kit_id, verbose=False)   # kits need the commit
         time.sleep(0.4)

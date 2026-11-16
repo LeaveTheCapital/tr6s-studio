@@ -8,9 +8,9 @@ it claims to be.
 
 import pytest
 
-from tr8s.kitbuild import scale_pitches
-from tr8s.lines import SHAPES, acid, arp, bassline, generate, stab
-from tr8s.melody import COARSE_MAX, COARSE_MIN, note_to_midi
+from tr6s.kitbuild import scale_pitches
+from tr6s.lines import SHAPES, acid, arp, bassline, generate, stab
+from tr6s.melody import COARSE_MAX, COARSE_MIN, note_to_midi
 
 KEYS = ["C minor", "F# phrygian", "A dorian", "D# minor", "G major"]
 

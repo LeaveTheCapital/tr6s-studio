@@ -11,9 +11,9 @@ regression in that order, so the order itself is asserted.
 import pytest
 
 from fake import load_fixture_kit, load_fixture_pattern, make_device
-from tr8s import tools
-from tr8s.style import STYLES
-from tr8s.tools import DEFAULT_KEYS, DEFAULT_LINE, ToolError
+from tr6s import tools
+from tr6s.style import STYLES
+from tr6s.tools import DEFAULT_KEYS, DEFAULT_LINE, ToolError
 
 
 @pytest.fixture

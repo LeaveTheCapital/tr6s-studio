@@ -25,10 +25,10 @@ import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import tr8s_sysex as t      # noqa: E402
-import tr8s_write as w      # noqa: E402
-import tr8s_kit as k        # noqa: E402
-import tr8s_melody as M     # noqa: E402
+import tr6s_sysex as t      # noqa: E402
+import tr6s_write as w      # noqa: E402
+import tr6s_kit as k        # noqa: E402
+import tr6s_melody as M     # noqa: E402
 
 KIT_SLOT = 122        # panel 123
 PAT_SLOT = 118        # panel 8-07
@@ -145,7 +145,7 @@ def build_kit(port):
 
 def build_pattern():
     blob = bytearray(open(
-        '/home/svh/tr8s/backups/patterns/pattern_116.bin', 'rb').read())
+        '/home/svh/tr6s/backups/patterns/pattern_116.bin', 'rb').read())
     blob[0:16] = b'MELODIC TECHNO  '[:16]
     bpm10 = BPM * 10
     blob[16] = bpm10 & 0xFF

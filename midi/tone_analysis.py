@@ -28,9 +28,9 @@ import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import tr8s_sysex as t   # noqa: E402
-import tr8s_write as w   # noqa: E402
-import tr8s_kit as k     # noqa: E402
+import tr6s_sysex as t   # noqa: E402
+import tr6s_write as w   # noqa: E402
+import tr6s_kit as k     # noqa: E402
 
 SCRATCH_KIT = 123          # panel 124, an empty "----" slot
 PROBE_INST = 'LT'
@@ -39,7 +39,7 @@ CHAN = 9
 DONOR_KIT, DONOR_INST = 61, 'LT'    # a working SAMPLE instrument, read from DEVICE
 GAP = 2.6                  # per tone: kit write + commit + trigger + tail
 BATCH = 12                 # tones per continuous recording
-OUT = "/home/svh/tr8s/tones.json"
+OUT = "/home/svh/tr6s/tones.json"
 TMP = "/tmp/claude-1000/-home-svh/145ac41c-4596-41f5-b9b6-290f63582c68/scratchpad"
 
 CATS = ['IMPORT', 'BD', 'SD', 'TOM', 'RS', 'HC', 'CH/OH', 'CC/RC', 'PERC1',

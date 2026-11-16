@@ -43,7 +43,7 @@ from .chat import MAX_TURNS, SYSTEM, _mcp_name, _summarise
 from .tools import REGISTRY, ToolError, call, schemas
 
 REPO = Path(__file__).resolve().parents[2]
-SERVER_NAME = "tr8s"
+SERVER_NAME = "tr6s"
 DEFAULT_MODEL = "opus"
 MODELS = ("opus", "sonnet")
 
@@ -52,7 +52,7 @@ MODELS = ("opus", "sonnet")
 
 def cli_path() -> str | None:
     """The `claude` binary the SDK will drive, if there is one."""
-    return os.environ.get("TR8S_CLAUDE_CLI") or shutil.which("claude")
+    return os.environ.get("TR6S_CLAUDE_CLI") or shutil.which("claude")
 
 
 def sdk_available() -> tuple[bool, str]:
@@ -230,7 +230,7 @@ class Login:
             os.execvp(args[0], args)
         self.pid, self.fd = pid, fd
         self.thread = threading.Thread(target=self._pump, daemon=True,
-                                       name="tr8s-login")
+                                       name="tr6s-login")
         self.thread.start()
 
     def _pump(self):
@@ -381,7 +381,7 @@ class Agent:
         self.turns = 0
         self._loop = asyncio.new_event_loop()
         self._thread = threading.Thread(target=self._loop.run_forever,
-                                        daemon=True, name="tr8s-agent")
+                                        daemon=True, name="tr6s-agent")
         self._thread.start()
         self._server = None
 
