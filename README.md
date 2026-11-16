@@ -29,6 +29,8 @@ A BD Tune increment on the same kit changed only byte 390 (`7C` to `7D`), and th
 
 An SD Tune increment changed only byte 442 (`80` to `81`), and the full blob matched baseline after restoration. The 52-byte gap from BD Tune matches the first two TR-8S instrument records. The raw byte is available as `Kit.sd_tune_raw`; the remaining track records still need verification.
 
+HC Tune changed only byte 546 (`80` to `81`), and the blob matched baseline after restoration. This is the fourth consecutive 52-byte record (`388 + 3 × 52 + 2`). The TR-8S HC position would be byte 702, so the TR-6S uses compact track order at least through HC. The raw byte is available as `Kit.hc_tune_raw`.
+
 ## Source
 
 This is a GitHub fork of `ideaCompany/tr8s-studio` at upstream commit `a62ae22c5f7816a75db61722fc006c536d4f096b`. The original binary assets and test fixtures are retained in the fork.
