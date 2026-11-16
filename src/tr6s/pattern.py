@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 TRACKS = ["BD", "SD", "LT", "HC", "CH", "OH"]
 VARIATIONS = "ABCDEFGH"
 
-SIZE = 24599
+SIZE = 24504
 HEADER = 144
 BLOCK = 2436
 NBLOCKS = 10

@@ -42,9 +42,9 @@ GET_OFFSETS = {"system": 0x31, "pattern": 0x41, "kit": 0x51,
 SEND_OFFSETS = {"system": 0x30, "pattern": 0x40, "kit": 0x50,
                 "tone": 0x60, "pcm_tone": 0x70, "sample": 0x72}
 WRITE_OFFSETS = {"system": 0x00, "pattern": 0x01, "kit": 0x02, "tone": 0x03}
-# Measured on a TR-6S with firmware 1.51 / revision 0BDE. Tone and sample
-# bulk formats have not been measured on this model.
-BLOB_SIZES = {"system": 754, "pattern": 24599, "kit": 1317}
+# Measured on a TR-6S with firmware 1.51 / revision 0BDE after fixing
+# aseqdump continuation-line parsing. Tone and sample sizes are unverified.
+BLOB_SIZES = {"system": 752, "pattern": 24504, "kit": 1312}
 # chunk size -> two-byte offset from the utility base
 DATA_OFFSETS = {1 << i: [1, i] for i in range(11)}
 PROGRESS_OFFSET = [1, 16]

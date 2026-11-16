@@ -4,6 +4,7 @@ import unittest
 
 from tr6s.kit import Kit, KitError
 from tr6s.pattern import Pattern, PatternError
+from tr6s.sequencer import SequencerTransport
 from tr6s.transport import (BLOB_SIZES, DT1, MODEL_TR6S, Transport,
                             TransportError, checksum, encode7, make_sysex,
                             unpack7)
@@ -20,10 +21,10 @@ class TR6SPortTests(unittest.TestCase):
 
 
     def test_measured_blob_sizes_and_write_guard(self):
-        self.assertEqual(BLOB_SIZES, {"system": 754, "pattern": 24599, "kit": 1317})
+        self.assertEqual(BLOB_SIZES, {"system": 752, "pattern": 24504, "kit": 1312})
         transport = Transport()
         with self.assertRaisesRegex(TransportError, "bulk writes are disabled"):
-            transport.send_blob("pattern", 0, bytes(24599))
+            transport.send_blob("pattern", 0, bytes(24504))
         with self.assertRaisesRegex(TransportError, "commits are disabled"):
             transport.commit("kit", 0)
         with self.assertRaisesRegex(TransportError, "not verified"):
@@ -35,12 +36,20 @@ class TR6SPortTests(unittest.TestCase):
                          bytes([128, 1, 130, 3]))
 
     def test_blob_models_keep_unverified_offsets_hidden(self):
-        pattern = Pattern.from_bytes(b"TEST PATTERN    " + bytes(24599 - 16))
+        pattern = Pattern.from_bytes(b"TEST PATTERN    " + bytes(24504 - 16))
         self.assertEqual(pattern.name, "TEST PATTERN")
         self.assertTrue(pattern.describe()["variations_unmapped"])
         with self.assertRaisesRegex(PatternError, "not verified"):
             pattern.get_steps("A", "BD")
-        kit = Kit.from_bytes(b"TEST KIT        " + bytes(1317 - 16))
+        kit = Kit.from_bytes(b"TEST KIT        " + bytes(1312 - 16))
         self.assertEqual(kit.name, "TEST KIT")
         with self.assertRaisesRegex(KitError, "not verified"):
             kit.get("BD", "tune")
+
+    def test_sequencer_continuation_does_not_insert_client_number(self):
+        transport = SequencerTransport(port="24:0")
+        self.assertIsNone(transport._parse_line(
+            " 24:0   System exclusive   7 bytes  F0 41 10"))
+        message = transport._parse_line(
+            " 24:0   System exclusive   00 00 6D F7")
+        self.assertEqual(message, bytes.fromhex("F0 41 10 00 00 6D F7"))

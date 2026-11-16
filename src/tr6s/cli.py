@@ -108,16 +108,16 @@ def main(argv=None):
         if args.cmd == "call":
             _print(call(args.tool, json.loads(args.args)))
         elif args.cmd == "info":
-            from .transport import Transport
-            with Transport() as transport:
-                firmware = transport.firmware_retry()
-                _print({"port": transport.path, **firmware})
+            from .sequencer import SequencerTransport
+            with SequencerTransport() as transport:
+                _print(transport.info())
         elif args.cmd == "read-blob":
             from pathlib import Path
-            from .transport import BLOB_SIZES, Transport, TransportError
+            from .sequencer import SequencerTransport
+            from .transport import BLOB_SIZES, TransportError
             if not 0 <= args.slot <= (0 if args.kind == "system" else 127):
                 ap.error("slot is out of range for this blob kind")
-            with Transport() as transport:
+            with SequencerTransport() as transport:
                 blob = transport.read_blob(args.kind, args.slot)
             if blob is None or len(blob) != BLOB_SIZES[args.kind]:
                 raise TransportError(f"incomplete {args.kind} read")

@@ -26,7 +26,7 @@ from dataclasses import dataclass, field
 
 TRACKS = ["BD", "SD", "LT", "HC", "CH", "OH"]
 
-SIZE = 1317
+SIZE = 1312
 REC_BASE = 388
 REC_STRIDE = 52
 # Bytes carrying a sample's envelope and gain. Measured across 669 ACB and 170
