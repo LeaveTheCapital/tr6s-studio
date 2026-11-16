@@ -27,6 +27,8 @@ Differential captures on kit slot 1 have confirmed raw Reverb Time at offset 69 
 
 A BD Tune increment on the same kit changed only byte 390 (`7C` to `7D`), and the full blob matched baseline after the knob was restored. This agrees with the TR-8S record base `388` plus its tune field offset `2`, but it does not establish the remaining instrument records or signed value mapping. The raw byte is available as `Kit.bd_tune_raw`.
 
+An SD Tune increment changed only byte 442 (`80` to `81`). The 52-byte gap from BD Tune matches the first two TR-8S instrument records. The raw byte is available as `Kit.sd_tune_raw`; the remaining track records still need verification.
+
 ## Source
 
 This is a GitHub fork of `ideaCompany/tr8s-studio` at upstream commit `a62ae22c5f7816a75db61722fc006c536d4f096b`. The original binary assets and test fixtures are retained in the fork.
