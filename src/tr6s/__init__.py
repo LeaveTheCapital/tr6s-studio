@@ -1,12 +1,12 @@
 """
-tr6s — drive a Roland TR-8S over USB: patterns, kits, melodies.
+tr6s — experimental read-only SysEx port for the Roland TR-6S.
 
 Layers, lowest first:
 
     config      paths and device discovery, no hardcoded machine specifics
     transport   SysEx framing and bulk transfer; moves opaque blobs
-    pattern     the 24504-byte pattern model: steps, motion, header
-    kit         the 1312-byte kit model: tones and per-instrument parameters
+    pattern     24504-byte pattern blob; verified common header only
+    kit         1312-byte kit blob; verified name and raw Reverb Time read
     melody      note names <-> per-step tune motion
     tones       the measured tone catalogue (roots, loudness, decay, brightness)
     device      the facade: one object speaking Patterns, Kits and Tones

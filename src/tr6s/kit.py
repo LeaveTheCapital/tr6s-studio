@@ -1,5 +1,7 @@
 """
-Layer 2 — the Kit model. Parses and builds the 1312-byte blob.
+Layer 2 — TR-6S kit blob. Only the name and raw Reverb Time offset have
+been checked on hardware; instrument offsets below are TR-8S research and
+remain disabled until TR-6S differential captures confirm them.
 
     0..15         name
     388 + i*52    instrument record, i = 0..10 in panel order
@@ -27,6 +29,7 @@ from dataclasses import dataclass, field
 TRACKS = ["BD", "SD", "LT", "HC", "CH", "OH"]
 
 SIZE = 1312
+REVERB_TIME_RAW_OFFSET = 69  # confirmed by a one-step panel change on kit slot 1
 REC_BASE = 388
 REC_STRIDE = 52
 # Bytes carrying a sample's envelope and gain. Measured across 669 ACB and 170
@@ -108,6 +111,11 @@ class Kit:
     def name(self, value: str):
         self.raw[0:16] = value[:16].ljust(16).encode("ascii", "replace")
 
+    @property
+    def reverb_time_raw(self) -> int:
+        """Kit reverb time's stored byte; display mapping is not yet established."""
+        return self.raw[REVERB_TIME_RAW_OFFSET]
+
     # -------------------------------------------------------------- fields
 
     def get(self, inst: str, field_name: str) -> int:
@@ -178,15 +186,5 @@ class Kit:
         self.raw[o:o + REC_STRIDE] = donor.raw[d:d + REC_STRIDE]
 
     def describe(self) -> dict:
-        raise KitError("TR-6S instrument blob offsets are not verified")
-        out = {"name": self.name, "instruments": {}}
-        for inst in TRACKS:
-            out["instruments"][inst] = {
-                f: self.get(inst, f) for f in FIELDS
-            }
-            out["instruments"][inst]["sample_params"] = self.has_sample_params(inst)
-            ci = self.color(inst)
-            out["instruments"][inst]["color"] = ci
-            out["instruments"][inst]["color_name"] = (
-                COLOUR_NAMES[ci] if ci < len(COLOUR_NAMES) else str(ci))
-        return out
+        return {"name": self.name, "reverb_time_raw": self.reverb_time_raw,
+                "instruments_unmapped": True}

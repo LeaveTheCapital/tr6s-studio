@@ -1,5 +1,6 @@
 """
-Layer 2 — the Pattern model. Parses and builds the 24504-byte blob.
+Layer 2 — TR-6S pattern blob. Header reads are provisional; the TR-8S
+variation and step layout below remains disabled pending differential capture.
 
 Layout is documented in docs/PROTOCOL.md. In brief:
 
