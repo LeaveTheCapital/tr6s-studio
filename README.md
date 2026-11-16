@@ -31,6 +31,8 @@ An SD Tune increment changed only byte 442 (`80` to `81`), and the full blob mat
 
 HC Tune changed only byte 546 (`80` to `81`), and the blob matched baseline after restoration. This is the fourth consecutive 52-byte record (`388 + 3 × 52 + 2`). The TR-8S HC position would be byte 702, so the TR-6S uses compact track order at least through HC. The raw byte is available as `Kit.hc_tune_raw`.
 
+OH Tune changed only byte 650 (`80` to `81`), the sixth consecutive 52-byte record (`388 + 5 × 52 + 2`). Together with the HC capture, this supports compact six-track kit order. LT and CH remain inferred rather than directly measured. The raw byte is available as `Kit.oh_tune_raw`.
+
 ## Source
 
 This is a GitHub fork of `ideaCompany/tr8s-studio` at upstream commit `a62ae22c5f7816a75db61722fc006c536d4f096b`. The original binary assets and test fixtures are retained in the fork.

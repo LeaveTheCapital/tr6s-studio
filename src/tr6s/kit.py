@@ -1,5 +1,6 @@
 """
-Layer 2 — TR-6S kit blob. Only the name, raw reverb offsets, and BD/SD/HC Tune have
+Layer 2 — TR-6S kit blob. Only the name, raw reverb offsets, and
+BD/SD/HC/OH Tune have
 been checked on hardware; instrument offsets below are TR-8S research and
 remain disabled until TR-6S differential captures confirm them.
 
@@ -34,6 +35,7 @@ REVERB_LEVEL_RAW_OFFSET = 70  # confirmed by a one-step panel change on kit slot
 BD_TUNE_RAW_OFFSET = 390  # confirmed by a one-step panel change on kit slot 1
 SD_TUNE_RAW_OFFSET = 442  # confirmed by a one-step panel change on kit slot 1
 HC_TUNE_RAW_OFFSET = 546  # confirms compact track index 3, not TR-8S index 6
+OH_TUNE_RAW_OFFSET = 650  # confirms compact track index 5, not TR-8S index 8
 REC_BASE = 388
 REC_STRIDE = 52
 # Bytes carrying a sample's envelope and gain. Measured across 669 ACB and 170
@@ -140,6 +142,11 @@ class Kit:
         """HC Tune's stored byte; TR-6S signed/display mapping is unverified."""
         return self.raw[HC_TUNE_RAW_OFFSET]
 
+    @property
+    def oh_tune_raw(self) -> int:
+        """OH Tune's stored byte; TR-6S signed/display mapping is unverified."""
+        return self.raw[OH_TUNE_RAW_OFFSET]
+
     # -------------------------------------------------------------- fields
 
     def get(self, inst: str, field_name: str) -> int:
@@ -215,4 +222,5 @@ class Kit:
                 "bd_tune_raw": self.bd_tune_raw,
                 "sd_tune_raw": self.sd_tune_raw,
                 "hc_tune_raw": self.hc_tune_raw,
+                "oh_tune_raw": self.oh_tune_raw,
                 "instruments_unmapped": True}
