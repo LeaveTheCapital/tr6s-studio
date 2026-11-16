@@ -27,13 +27,15 @@ Differential captures on kit slot 1 have confirmed raw Reverb Time at offset 69 
 
 A BD Tune increment on the same kit changed only byte 390 (`7C` to `7D`), and the full blob matched baseline after the knob was restored. This agrees with the TR-8S record base `388` plus its tune field offset `2`, but it does not establish the remaining instrument records or signed value mapping. The raw byte is available as `Kit.bd_tune_raw`.
 
-An SD Tune increment changed only byte 442 (`80` to `81`), and the full blob matched baseline after restoration. The 52-byte gap from BD Tune matches the first two TR-8S instrument records. The raw byte is available as `Kit.sd_tune_raw`; the remaining track records still need verification.
+An SD Tune increment changed only byte 442 (`80` to `81`), and the full blob matched baseline after restoration. The 52-byte gap from BD Tune matches the first two TR-8S instrument records. The raw byte is available as `Kit.sd_tune_raw`.
 
 HC Tune changed only byte 546 (`80` to `81`), and the blob matched baseline after restoration. This is the fourth consecutive 52-byte record (`388 + 3 × 52 + 2`). The TR-8S HC position would be byte 702, so the TR-6S uses compact track order at least through HC. The raw byte is available as `Kit.hc_tune_raw`.
 
 OH Tune changed only byte 650 (`80` to `81`), then the full blob matched baseline after restoration. It is the sixth consecutive 52-byte record (`388 + 5 × 52 + 2`). Together with the HC capture, this supports compact six-track kit order. The raw byte is available as `Kit.oh_tune_raw`.
 
-LT Tune changed only byte 494 (`80` to `81`) and returned to a full baseline match after restoration. This verifies the third compact record; only CH Tune remains unmeasured among the six tracks. The raw byte is available as `Kit.lt_tune_raw`.
+LT Tune changed only byte 494 (`80` to `81`) and returned to a full baseline match after restoration. This verifies the third compact record. The raw byte is available as `Kit.lt_tune_raw`.
+
+CH Tune changed only byte 598 (`7B` to `7C`) and returned to a full baseline match after restoration. This confirms the fifth compact record and completes a direct tune-offset check for all six TR-6S tracks. `Kit.tune_raw(track)` reads these raw bytes; the signed/display mapping and other instrument fields remain unverified.
 
 ## Source
 

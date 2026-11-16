@@ -1,11 +1,10 @@
 """
-Layer 2 — TR-6S kit blob. Only the name, raw reverb offsets, and
-BD/SD/LT/HC/OH Tune have
-been checked on hardware; instrument offsets below are TR-8S research and
-remain disabled until TR-6S differential captures confirm them.
+Layer 2 — TR-6S kit blob. The name, raw reverb offsets, and all six tune
+positions have been checked on hardware. Other instrument field offsets below
+are TR-8S research and remain disabled until differential captures confirm them.
 
     0..15         name
-    388 + i*52    instrument record, i = 0..10 in panel order
+    388 + i*52    instrument record, i = 0..5 in TR-6S track order
       +0..1 tone   +2 tune   +3 decay   +4 level (READ-ONLY)
       +6 pan       +7 reverb +8 delay   +11 lfo
       +28..+41     envelope/gain fields a SAMPLE tone needs (gain at +37)
@@ -36,7 +35,12 @@ BD_TUNE_RAW_OFFSET = 390  # confirmed by a one-step panel change on kit slot 1
 SD_TUNE_RAW_OFFSET = 442  # confirmed by a one-step panel change on kit slot 1
 LT_TUNE_RAW_OFFSET = 494  # confirmed by a one-step panel change on kit slot 1
 HC_TUNE_RAW_OFFSET = 546  # confirms compact track index 3, not TR-8S index 6
+CH_TUNE_RAW_OFFSET = 598  # confirmed by a one-step panel change on kit slot 1
 OH_TUNE_RAW_OFFSET = 650  # confirms compact track index 5, not TR-8S index 8
+TUNE_RAW_OFFSETS = dict(zip(TRACKS, (
+    BD_TUNE_RAW_OFFSET, SD_TUNE_RAW_OFFSET, LT_TUNE_RAW_OFFSET,
+    HC_TUNE_RAW_OFFSET, CH_TUNE_RAW_OFFSET, OH_TUNE_RAW_OFFSET,
+)))
 REC_BASE = 388
 REC_STRIDE = 52
 # Bytes carrying a sample's envelope and gain. Measured across 669 ACB and 170
@@ -153,6 +157,18 @@ class Kit:
         """OH Tune's stored byte; TR-6S signed/display mapping is unverified."""
         return self.raw[OH_TUNE_RAW_OFFSET]
 
+    @property
+    def ch_tune_raw(self) -> int:
+        """CH Tune's stored byte; TR-6S signed/display mapping is unverified."""
+        return self.raw[CH_TUNE_RAW_OFFSET]
+
+    def tune_raw(self, inst: str) -> int:
+        """Read a verified track's raw tune byte in compact TR-6S order."""
+        try:
+            return self.raw[TUNE_RAW_OFFSETS[inst]]
+        except KeyError as error:
+            raise KitError(f"unknown TR-6S track {inst!r}") from error
+
     # -------------------------------------------------------------- fields
 
     def get(self, inst: str, field_name: str) -> int:
@@ -229,5 +245,6 @@ class Kit:
                 "sd_tune_raw": self.sd_tune_raw,
                 "lt_tune_raw": self.lt_tune_raw,
                 "hc_tune_raw": self.hc_tune_raw,
+                "ch_tune_raw": self.ch_tune_raw,
                 "oh_tune_raw": self.oh_tune_raw,
                 "instruments_unmapped": True}
