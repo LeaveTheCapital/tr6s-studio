@@ -1,6 +1,6 @@
 """
 Layer 2 — TR-6S kit blob. The name, raw reverb offsets, all six tune
-positions, BD Decay, BD Pan, and BD Reverb Send have been checked on hardware.
+positions, BD Decay, BD Pan, and BD Reverb/Delay Sends have been checked on hardware.
 Other field offsets below
 are TR-8S research and remain disabled until differential captures confirm them.
 
@@ -41,6 +41,7 @@ OH_TUNE_RAW_OFFSET = 650  # confirms compact track index 5, not TR-8S index 8
 BD_DECAY_RAW_OFFSET = 391  # confirmed by a one-step panel change on kit slot 1
 BD_PAN_RAW_OFFSET = 394  # confirmed by a one-step right pan change on kit slot 1
 BD_REVERB_SEND_RAW_OFFSET = 395  # confirmed by a one-step panel change on kit slot 1
+BD_DELAY_SEND_RAW_OFFSET = 396  # confirmed by a one-step panel change on kit slot 1
 TUNE_RAW_OFFSETS = dict(zip(TRACKS, (
     BD_TUNE_RAW_OFFSET, SD_TUNE_RAW_OFFSET, LT_TUNE_RAW_OFFSET,
     HC_TUNE_RAW_OFFSET, CH_TUNE_RAW_OFFSET, OH_TUNE_RAW_OFFSET,
@@ -51,6 +52,7 @@ VERIFIED_RAW_OFFSETS = {
     BD_DECAY_RAW_OFFSET: "BD_decay_raw",
     BD_PAN_RAW_OFFSET: "BD_pan_raw",
     BD_REVERB_SEND_RAW_OFFSET: "BD_reverb_send_raw",
+    BD_DELAY_SEND_RAW_OFFSET: "BD_delay_send_raw",
     **{offset: f"{track}_tune_raw" for track, offset in TUNE_RAW_OFFSETS.items()},
 }
 REC_BASE = 388
@@ -196,6 +198,11 @@ class Kit:
         """BD Reverb Send's stored byte; display mapping is unverified."""
         return self.raw[BD_REVERB_SEND_RAW_OFFSET]
 
+    @property
+    def bd_delay_send_raw(self) -> int:
+        """BD Delay Send's stored byte; display mapping is unverified."""
+        return self.raw[BD_DELAY_SEND_RAW_OFFSET]
+
     def candidate_record(self, inst: str) -> dict:
         """Inspect raw fields at TR-8S record offsets in compact TR-6S order.
 
@@ -210,12 +217,12 @@ class Kit:
             "tone_id_candidate": struct.unpack_from("<H", self.raw, base)[0],
             "tune_raw_verified": self.tune_raw(inst),
             "level_raw_candidate": self.raw[base + 4],
-            "delay_send_raw_candidate": self.raw[base + 8],
             "lfo_raw_candidate": self.raw[base + 11],
         }
         record["decay_raw_verified" if inst == "BD" else "decay_raw_candidate"] = self.raw[base + 3]
         record["pan_raw_verified" if inst == "BD" else "pan_raw_candidate"] = self.raw[base + 6]
         record["reverb_send_raw_verified" if inst == "BD" else "reverb_send_raw_candidate"] = self.raw[base + 7]
+        record["delay_send_raw_verified" if inst == "BD" else "delay_send_raw_candidate"] = self.raw[base + 8]
         return record
 
     def inspect(self) -> dict:
@@ -228,6 +235,7 @@ class Kit:
                 "bd_decay_raw": self.bd_decay_raw,
                 "bd_pan_raw": self.bd_pan_raw,
                 "bd_reverb_send_raw": self.bd_reverb_send_raw,
+                "bd_delay_send_raw": self.bd_delay_send_raw,
                 "tune_raw_by_track": {inst: self.tune_raw(inst) for inst in TRACKS},
             },
             "candidates": {

@@ -20,7 +20,7 @@ tr6s diff-kit /tmp/kit-before.bin /tmp/kit-after.bin
 
 The device must be stopped for a bulk read. The CLI uses the TR-6S MIDI 1 ALSA sequencer port so it can coexist with the Pi's MIDI router and connected E16. Set `TR6S_SEQ_PORT` to a `client:port` value if automatic discovery does not find it. The output path must not already exist.
 
-`inspect-kit` groups the hardware-confirmed name, raw reverb values, six raw tune values, BD Decay, BD Pan, and BD Reverb Send under `verified`. It shows tone ID, the other decay, pan, and send bytes, level, delay send, and LFO bytes under `candidates`. Those candidate labels come from TR-8S bulk offsets applied to the confirmed compact TR-6S records; their meanings have not yet been checked by TR-6S panel changes. The command reads only and does not expose an editor.
+`inspect-kit` groups the hardware-confirmed name, raw reverb values, six raw tune values, BD Decay, BD Pan, BD Reverb Send, and BD Delay Send under `verified`. It shows tone ID, the other decay, pan, and send bytes, level, and LFO bytes under `candidates`. Those candidate labels come from TR-8S bulk offsets applied to the confirmed compact TR-6S records; their meanings have not yet been checked by TR-6S panel changes. The command reads only and does not expose an editor.
 
 `diff-kit` reports changed offsets between two saved kit blobs and labels a field as `verified_field` or `candidate_field`. A candidate label is a pointer for the next panel check, not a confirmed TR-6S field.
 
@@ -29,6 +29,8 @@ BD Decay is now confirmed at offset 391: one panel increment changed only `00` t
 BD Pan is confirmed at offset 394: one increment right from centre changed only `80` to `81`, and moving left restored the entire kit blob. The inspector marks its raw byte as verified.
 
 BD Reverb Send is confirmed at offset 395: one panel increment changed only `00` to `01`, and reversing it restored the full kit blob. The inspector marks this raw byte as verified.
+
+BD Delay Send is confirmed at offset 396: one panel increment changed only `00` to `01`, and reversing it restored the full kit blob. The inspector marks this raw byte as verified.
 
 ## Current limits
 
