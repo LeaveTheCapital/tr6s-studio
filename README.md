@@ -23,6 +23,6 @@ TR-8S Studio's pattern and kit editors still use TR-8S offsets. The TR-6S blobs 
 
 The next step is to capture pairs of TR-6S blobs around one panel change at a time and map the pattern and kit fields. See the port notes linked above for the proposed sequence and cautions.
 
-## Source transfer note
+## Source
 
-This workspace could not reach GitHub from the shell. The local tree was reconstructed from upstream text files through the GitHub connector, rather than cloned with Git. Upstream binary screenshots, MIDI examples, and test fixtures are absent. The `upstream` remote records the source URL, but this is not a GitHub fork yet.
+This is a GitHub fork of `ideaCompany/tr8s-studio` at upstream commit `a62ae22c5f7816a75db61722fc006c536d4f096b`. The original binary assets and test fixtures are retained in the fork.
