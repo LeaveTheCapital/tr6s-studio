@@ -25,6 +25,8 @@ The next step is to capture pairs of TR-6S blobs around one panel change at a ti
 
 Differential captures on kit slot 1 have confirmed raw Reverb Time at offset 69 (`08` to `09` for one increment) and raw Reverb Level at offset 70 (`00` to `01`). Each change affected exactly one byte, and the full blob matched its baseline after restoration. Both fields are exposed for reading; their display-value mappings remain to be verified.
 
+A BD Tune increment on the same kit changed only byte 390 (`7C` to `7D`). This agrees with the TR-8S record base `388` plus its tune field offset `2`, but it does not establish the remaining instrument records or signed value mapping. The raw byte is available as `Kit.bd_tune_raw`.
+
 ## Source
 
 This is a GitHub fork of `ideaCompany/tr8s-studio` at upstream commit `a62ae22c5f7816a75db61722fc006c536d4f096b`. The original binary assets and test fixtures are retained in the fork.
