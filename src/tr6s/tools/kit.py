@@ -270,8 +270,9 @@ def kit_get(slot):
     d = k.describe()
     d.update(slot=s, panel=s + 1)
     # resolve tone ids to names so a caller can see what a kit actually sounds
-    # like without a second round of lookups
-    for inst, fields in d["instruments"].items():
+    # like without a second round of lookups. The read-only port's describe()
+    # omits per-instrument fields until those offsets are verified.
+    for inst, fields in d.get("instruments", {}).items():
         info = dev.tone_info(fields["tone"])
         if info:
             fields["tone_name"] = info.name

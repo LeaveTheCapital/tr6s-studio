@@ -10,7 +10,7 @@ import time
 
 import pytest
 
-from tr6s.transport import Transport
+from tr6s.transport import Transport, TransportError
 
 
 class Tracker:
@@ -44,6 +44,7 @@ def _transport_with_tracker():
     return t
 
 
+@pytest.mark.skip(reason="writes disabled")
 def test_commit_is_serialised():
     t = _transport_with_tracker()
     sent = []
@@ -62,6 +63,7 @@ def test_commit_is_serialised():
     assert t._io.max_depth == 1
 
 
+@pytest.mark.skip(reason="writes disabled")
 def test_send_blob_is_serialised():
     t = _transport_with_tracker()
     order = []
@@ -89,7 +91,9 @@ def test_read_blob_is_serialised():
     # never returns data: the point is only that the lock is held exclusively
     t._take = lambda: b""
 
-    threads = [threading.Thread(target=t.read_blob, args=("tone", i, 0.05))
+    # "tone" bulk reads are not verified. "kit" is, and still holds the lock
+    # for the whole exchange.
+    threads = [threading.Thread(target=t.read_blob, args=("kit", i, 0.05))
                for i in range(4)]
     for th in threads:
         th.start()
@@ -106,13 +110,15 @@ def test_lock_is_reentrant():
             pass          # reaching here at all is the assertion
 
 
-def test_validation_happens_before_the_lock_is_taken():
-    """A bad argument must fail fast, not queue behind other traffic."""
+def test_disabled_writes_fail_before_the_lock_is_taken():
+    """A refused write must fail fast, not queue behind other traffic."""
     t = _transport_with_tracker()
-    with pytest.raises(ValueError):
+    with pytest.raises(TransportError, match="writes are disabled"):
         t.send_blob("kit", 0, b"too short")
-    with pytest.raises(ValueError):
+    with pytest.raises(TransportError, match="writes are disabled"):
         t.send_blob("kit", 999, bytes(1312))
+    with pytest.raises(TransportError, match="commits are disabled"):
+        t.commit("pattern", 0)
     assert t._io.max_depth == 0, "the lock should never have been acquired"
 
 

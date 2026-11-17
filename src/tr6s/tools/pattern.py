@@ -33,9 +33,14 @@ def pattern_list(lo=0, hi=15):
             p = d.read_pattern(s)
         except DeviceError:
             continue
-        out.append({"slot": s, "panel": slot_to_panel(s), "name": p.name,
-                    "tempo": p.tempo, "kit": p.kit,
-                    "variations": sorted(p.describe()["variations"])})
+        described = p.describe()
+        entry = {"slot": s, "panel": slot_to_panel(s), "name": p.name,
+                 "tempo": p.tempo, "kit": p.kit}
+        if "variations" in described:
+            entry["variations"] = sorted(described["variations"])
+        else:
+            entry["variations_unmapped"] = True
+        out.append(entry)
     return out
 
 

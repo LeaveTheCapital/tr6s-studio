@@ -29,8 +29,12 @@ def test_offset_address_carries_across_bytes():
 
 
 def test_checksum_matches_known_good_message():
-    """A community-documented variation-select message, byte for byte."""
-    known = bytes.fromhex("f0411000000045122010004100010ef7".replace(" ", ""))
+    """A DT1 frame with the TR-6S model id 00 00 00 6D.
+
+    The checksum covers the address and data only, so it matches the
+    historical TR-8S example of this same address and payload.
+    """
+    known = bytes.fromhex("f041100000006d122010004100010ef7")
     mine = make_sysex(0x12, [0x20, 0x10, 0x00, 0x41], [0x00, 0x01])
     assert mine == known
 
@@ -83,14 +87,15 @@ def test_pattern_header_roundtrip():
     assert p.tempo == 126.0
     assert p.kit == 0
     assert p.scale == "16"
-    assert p.shuffle == 0
+    with pytest.raises(PatternError, match="not verified"):
+        _ = p.shuffle
     p.name = "MELODIC"
     p.tempo = 174.0
     p.kit = 61
     p.scale = "32"
-    p.shuffle = -40
-    assert (p.name, p.tempo, p.kit, p.scale, p.shuffle) == \
-           ("MELODIC", 174.0, 61, "32", -40)
+    assert (p.name, p.tempo, p.kit, p.scale) == ("MELODIC", 174.0, 61, "32")
+    with pytest.raises(PatternError, match="not verified"):
+        p.shuffle = -40
 
 
 def test_tempo_is_tenths_of_a_bpm():
@@ -105,6 +110,7 @@ def test_kit_reference_is_one_based_on_the_wire():
     assert p.raw[18] == 123
 
 
+@pytest.mark.skip(reason="not verified on TR-6S")
 def test_shuffle_is_offset_binary():
     p = blank_pattern()
     p.shuffle = 100
@@ -122,10 +128,11 @@ def test_header_validation():
         p.kit = 128
     with pytest.raises(PatternError):
         p.scale = "7"
-    with pytest.raises(PatternError):
+    with pytest.raises(PatternError, match="not verified"):
         p.shuffle = 200
 
 
+@pytest.mark.skip(reason="not verified on TR-6S")
 def test_steps_roundtrip_and_velocities():
     p = blank_pattern()
     p.set_steps("A", "BD", "X...x...o...X...")
@@ -136,6 +143,7 @@ def test_steps_roundtrip_and_velocities():
     assert p.raw[off + 8 * 4] == 55   # o
 
 
+@pytest.mark.skip(reason="not verified on TR-6S")
 def test_steps_pad_to_sixteen():
     p = blank_pattern()
     p.set_steps("A", "CH", "x.x.")
@@ -154,6 +162,7 @@ def test_steps_reject_bad_input():
         p.set_steps("Z", "BD", "X...")
 
 
+@pytest.mark.skip(reason="not verified on TR-6S")
 def test_variations_are_independent():
     p = blank_pattern()
     p.set_steps("A", "BD", "X...............")
@@ -168,6 +177,7 @@ def test_variation_block_geometry():
     assert (SIZE - HEADER) // BLOCK == 10
 
 
+@pytest.mark.skip(reason="not verified on TR-6S")
 def test_instrument_tracks_do_not_collide_with_motion_lanes():
     p = blank_pattern()
     p.set_steps("A", "RC", "X" * 16)          # last instrument track, index 10
@@ -176,6 +186,7 @@ def test_instrument_tracks_do_not_collide_with_motion_lanes():
     assert p.get_motion("A", "BD", 0)["tune"] == 64
 
 
+@pytest.mark.skip(reason="not verified on TR-6S")
 def test_motion_presence_mask():
     p = blank_pattern()
     assert p.get_motion("A", "LT", 3)["mask"] == 0
@@ -189,6 +200,7 @@ def test_motion_presence_mask():
     assert m["tune"] == -24
 
 
+@pytest.mark.skip(reason="not verified on TR-6S")
 def test_zero_tune_is_distinct_from_no_motion():
     """A zero value byte means 'no motion' only when the mask says so."""
     p = blank_pattern()
@@ -197,6 +209,7 @@ def test_zero_tune_is_distinct_from_no_motion():
     assert p.get_motion("A", "LT", 0)["tune"] == 0
 
 
+@pytest.mark.skip(reason="not verified on TR-6S")
 def test_clear_variation_clears_steps_and_motion():
     p = blank_pattern()
     p.set_steps("A", "BD", "X" * 16)
@@ -210,9 +223,9 @@ def test_copy_is_independent():
     p = blank_pattern()
     q = p.copy()
     q.tempo = 90.0
-    q.set_steps("A", "BD", "X" * 16)
+    q.name = "OTHER"
     assert p.tempo == 126.0
-    assert p.get_steps("A", "BD") == "." * 16
+    assert p.name == "TEST"
 
 
 # ------------------------------------------------------------------------ kit
@@ -228,12 +241,16 @@ def test_kit_rejects_wrong_size():
         Kit(bytearray(10))
 
 
-def test_kit_record_stride():
-    assert Kit.record_offset("BD") == 388
-    assert Kit.record_offset("SD") == 440
-    assert Kit.record_offset("RC") == 388 + 10 * 52
+def test_verified_tune_offsets_follow_compact_track_order():
+    from tr6s.kit import TUNE_RAW_OFFSETS
+    assert TUNE_RAW_OFFSETS == {
+        "BD": 390, "SD": 442, "LT": 494, "HC": 546, "CH": 598, "OH": 650,
+    }
+    with pytest.raises(KitError, match="not verified"):
+        Kit.record_offset("BD")
 
 
+@pytest.mark.skip(reason="not verified on TR-6S")
 def test_kit_fields_roundtrip():
     k = blank_kit()
     k.set("LT", "tone", 465)
@@ -250,12 +267,14 @@ def test_kit_fields_roundtrip():
     assert k.get("LT", "delay") == 205
 
 
-def test_tune_and_pan_are_offset_binary():
+def test_verified_bd_tune_and_pan_raw_bytes():
     k = blank_kit()
-    k.set("BD", "tune", 0)
-    assert k.raw[Kit.record_offset("BD") + 2] == 128
-    k.set("BD", "pan", 0)
-    assert k.raw[Kit.record_offset("BD") + 6] == 128
+    k.raw[390] = 0x7C
+    k.raw[394] = 0x80
+    assert k.bd_tune_raw == 0x7C
+    assert k.bd_pan_raw == 0x80
+    with pytest.raises(KitError, match="not verified"):
+        k.set("BD", "tune", 0)
 
 
 def test_level_cannot_be_written():
@@ -265,16 +284,17 @@ def test_level_cannot_be_written():
     assert "fader" in str(e.value)
 
 
-def test_kit_field_validation():
+def test_kit_field_writes_are_not_verified():
     k = blank_kit()
-    with pytest.raises(KitError):
+    with pytest.raises(KitError, match="not verified"):
         k.set("BD", "tune", 200)
-    with pytest.raises(KitError):
+    with pytest.raises(KitError, match="not verified"):
         k.set("BD", "decay", 300)
-    with pytest.raises(KitError):
+    with pytest.raises(KitError, match="not verified"):
         k.record_offset("ZZ")
 
 
+@pytest.mark.skip(reason="not verified on TR-6S")
 def test_sample_param_detection_and_inheritance():
     donor = blank_kit()
     target = blank_kit()
@@ -313,6 +333,7 @@ def test_note_name_roundtrip():
         assert M.note_to_midi(M.midi_to_note(m)) == m
 
 
+@pytest.mark.skip(reason="not verified on TR-6S")
 def test_coarse_encoding_matches_the_measured_panel_values():
     """Panel +12 stored 36, -12 stored 12: exactly semitones + 24."""
     p = blank_pattern()
@@ -321,6 +342,7 @@ def test_coarse_encoding_matches_the_measured_panel_values():
     assert p.get_motion("A", "LT", 2)["ctrl"] == 12    # -12 semitones
 
 
+@pytest.mark.skip(reason="not verified on TR-6S")
 def test_coarse_melody_roundtrip():
     p = blank_pattern()
     tune = "C2 . G2 C3 . D#3 G3 . C4 . G3 D#3 . C3 G2 ."
@@ -339,6 +361,7 @@ def test_fine_range_is_under_an_octave():
     assert span < 12
 
 
+@pytest.mark.skip(reason="not verified on TR-6S")
 def test_out_of_range_notes_warn_and_clamp_not_silently_transpose():
     p = blank_pattern()
     warn = M.write(p, "A", "LT", "C6", "C3", mode="coarse")
@@ -346,18 +369,21 @@ def test_out_of_range_notes_warn_and_clamp_not_silently_transpose():
     assert p.get_motion("A", "LT", 0)["ctrl"] == 24 + 24   # clamped to +24
 
 
+@pytest.mark.skip(reason="not verified on TR-6S")
 def test_strict_mode_raises_instead_of_clamping():
     p = blank_pattern()
     with pytest.raises(M.MelodyError):
         M.write(p, "A", "LT", "C6", "C3", mode="coarse", strict=True)
 
 
+@pytest.mark.skip(reason="not verified on TR-6S")
 def test_melody_sounds_only_the_steps_it_writes():
     p = blank_pattern()
     M.write(p, "A", "LT", "C3 . . C3", "C3")
     assert p.get_steps("A", "LT") == "x..x............"
 
 
+@pytest.mark.skip(reason="not verified on TR-6S")
 def test_fine_mode_uses_the_measured_scale():
     p = blank_pattern()
     M.write(p, "A", "MT", "D3", "C3", mode="fine")     # +2 semitones

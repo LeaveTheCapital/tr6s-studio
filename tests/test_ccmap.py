@@ -12,10 +12,15 @@ from tr6s.ccmap import (BEAT_CC, INSTRUMENT_CC, MASTER_CC, PARAMS, cc_for,
 from tr6s.kit import TRACKS
 
 
-def test_every_instrument_has_all_four_controls():
-    assert set(INSTRUMENT_CC) == set(TRACKS)
-    for inst, ccs in INSTRUMENT_CC.items():
-        assert len(ccs) == len(PARAMS) == 4, inst
+def test_every_tr6s_track_has_all_four_controls():
+    """The six TR-6S tracks are in the inherited chart.
+
+    The chart still names the TR-8S-only instruments (MT, HT, RS, CC, RC).
+    Those extra names are not TR-6S tracks.
+    """
+    assert set(TRACKS) <= set(INSTRUMENT_CC)
+    for inst in TRACKS:
+        assert len(INSTRUMENT_CC[inst]) == len(PARAMS) == 4, inst
 
 
 def test_no_cc_number_is_used_twice():

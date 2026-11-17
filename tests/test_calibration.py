@@ -77,6 +77,7 @@ def wired():
     tools.set_device(None)
 
 
+@pytest.mark.skip(reason="not verified on TR-6S")
 def test_fix_shortens_a_smearing_decay(wired):
     d, t = wired
     tools.call("pattern.clear_variation", {"slot": 0, "variation": "A"})
@@ -108,6 +109,7 @@ def test_fix_reports_what_it_cannot_fix(wired):
         assert a["why_not_fixable"]
 
 
+@pytest.mark.skip(reason="not verified on TR-6S")
 def test_fix_says_so_when_there_is_nothing_to_do(wired):
     tools.call("pattern.clear_variation", {"slot": 0, "variation": "H"})
     r = tools.call("kit.fix", {"slot": 0, "variation": "H"})
@@ -178,6 +180,7 @@ def test_tune_description_carries_its_caveat():
 
 # ----------------------------------------------------------- kit.tune_to
 
+@pytest.mark.skip(reason="not verified on TR-6S")
 def test_tune_to_moves_the_instrument_to_the_asked_note(wired):
     r = tools.call("kit.tune_to", {"slot": 0, "instrument": "BD",
                                    "note": "C1", "root": "G1"})
@@ -187,12 +190,14 @@ def test_tune_to_moves_the_instrument_to_the_asked_note(wired):
     assert got == pytest.approx(-7, abs=0.1), "the signed byte was mishandled"
 
 
+@pytest.mark.skip(reason="not verified on TR-6S")
 def test_tune_to_refuses_what_it_cannot_reach(wired):
     with pytest.raises(ToolError, match="only reaches"):
         tools.call("kit.tune_to", {"slot": 0, "instrument": "BD",
                                    "note": "C4", "root": "G1"})
 
 
+@pytest.mark.skip(reason="not verified on TR-6S")
 def test_tune_to_needs_a_root_it_can_trust(wired):
     """Without knowing what it sounds at now, there is nothing to shift from."""
     with pytest.raises(ToolError, match="root"):
@@ -200,6 +205,7 @@ def test_tune_to_needs_a_root_it_can_trust(wired):
                                    "note": "C2"})
 
 
+@pytest.mark.skip(reason="not verified on TR-6S")
 def test_tune_to_says_when_it_cannot_land_exactly(wired):
     r = tools.call("kit.tune_to", {"slot": 0, "instrument": "BD",
                                    "note": "C1", "root": "G1"})

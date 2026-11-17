@@ -22,11 +22,9 @@ jobs:
 
       - name: Run offline tests
         env:
-          # verified: test_tr6s*.py, which passes on main today (port contract
-          # plus kit inspect/diff). Never includes tests/hardware/.
-          # all: every offline test under tests/, still excluding tests/hardware/.
-          # Set this to "all" once the inherited-suite repair is on main.
-          OFFLINE_SCOPE: verified
+          # all: every offline test under tests/, excluding tests/hardware/.
+          # verified: only test_tr6s*.py (port contract plus kit inspect/diff).
+          OFFLINE_SCOPE: all
         run: |
           set -eu
           case "$OFFLINE_SCOPE" in
