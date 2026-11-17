@@ -1,0 +1,43 @@
+name: Offline tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          # pyproject.toml requires >=3.10. 3.12 is the version this port is
+          # developed and tested with.
+          python-version: "3.12"
+
+      - name: Install
+        run: python -m pip install -e ".[dev]"
+
+      - name: Run offline tests
+        env:
+          # verified: test_tr6s*.py, which passes on main today (port contract
+          # plus kit inspect/diff). Never includes tests/hardware/.
+          # all: every offline test under tests/, still excluding tests/hardware/.
+          # Set this to "all" once the inherited-suite repair is on main.
+          OFFLINE_SCOPE: verified
+        run: |
+          set -eu
+          case "$OFFLINE_SCOPE" in
+            verified)
+              PYTHONPATH=src python -m unittest discover -s tests -p 'test_tr6s*.py' -v
+              ;;
+            all)
+              python -m pytest tests --ignore=tests/hardware -v
+              ;;
+            *)
+              echo "unknown OFFLINE_SCOPE=$OFFLINE_SCOPE" >&2
+              exit 1
+              ;;
+          esac
