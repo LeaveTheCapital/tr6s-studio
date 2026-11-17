@@ -1,21 +1,22 @@
 """
 A fake Transport backed by captured blobs, so everything above the wire can be
-tested with no TR-8S attached.
+tested with no TR-6S attached.
 
 It deliberately reproduces the device's real behaviours rather than an idealised
 version, because those are what the code has to cope with:
 
   * a transfer writes the slot immediately -- there is no scratch buffer
-  * `level` in a kit is overwritten by the "fader" on write
   * reads of an unknown slot return None
+
+The TR-8S fake overwrote kit level with the physical fader on every kit write.
+That used instrument-record offsets, which are not verified on the TR-6S, so
+this fake stores kit bytes as given.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from tr6s.kit import TRACKS as KIT_TRACKS
-from tr6s.kit import Kit
 from tr6s.transport import BLOB_SIZES
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -82,12 +83,9 @@ class FakeTransport:
                   settle: float = 0.0, ack_wait: float = 0.0) -> bool:
         if len(blob) != BLOB_SIZES[kind]:
             raise ValueError(f"{kind} blob is {len(blob)} bytes")
-        blob = bytearray(blob)
-        if kind == "kit":
-            # the device overwrites level with the physical fader position
-            for inst in KIT_TRACKS:
-                blob[Kit.record_offset(inst) + 4] = self.fader_level
-        # a transfer writes the slot straight away -- no scratch buffer
+        # a transfer writes the slot straight away -- no scratch buffer.
+        # kit level is not rewritten: the fader overwrite needs verified
+        # instrument-record offsets.
         self.slots[kind][slot] = bytes(blob)
         self.sent.append((kind, slot))
         return True

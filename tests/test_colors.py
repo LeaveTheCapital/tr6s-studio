@@ -27,18 +27,21 @@ def wired():
     tools.set_device(None)
 
 
+@pytest.mark.skip(reason="not verified on TR-6S")
 def test_there_is_one_colour_byte_per_instrument():
     assert COLOR_BASE + len(TRACKS) <= 1312
     k = Kit.from_bytes(load_fixture_kit())
     assert set(k.colors()) == set(TRACKS)
 
 
+@pytest.mark.skip(reason="not verified on TR-6S")
 def test_colours_map_to_the_bytes_in_track_order():
     k = Kit.from_bytes(load_fixture_kit())
     for i, inst in enumerate(TRACKS):
         assert k.color(inst) == k.raw[COLOR_BASE + i]
 
 
+@pytest.mark.skip(reason="not verified on TR-6S")
 def test_setting_a_colour_touches_only_that_byte():
     k = Kit.from_bytes(load_fixture_kit())
     before = bytes(k.raw)
@@ -48,17 +51,19 @@ def test_setting_a_colour_touches_only_that_byte():
     assert k.color("HC") == 9
 
 
-def test_a_colour_outside_the_palette_is_refused():
+def test_colour_offsets_are_not_verified():
     k = Kit.from_bytes(load_fixture_kit())
-    for bad in (-1, COLOR_COUNT, 255):
-        with pytest.raises(KitError):
-            k.set_color("BD", bad)
+    with pytest.raises(KitError, match="not verified"):
+        k.color("BD")
+    with pytest.raises(KitError, match="not verified"):
+        k.set_color("BD", 1)
 
 
 def test_every_palette_index_has_a_name():
     assert len(COLOUR_NAMES) == COLOR_COUNT
 
 
+@pytest.mark.skip(reason="not verified on TR-6S")
 def test_describe_reports_the_colour_and_its_name():
     d = Kit.from_bytes(load_fixture_kit()).describe()
     bd = d["instruments"]["BD"]
@@ -74,6 +79,7 @@ def real_kits():
     return [Kit.from_bytes(p.read_bytes()) for p in sorted(BACKUPS.glob("*.bin"))]
 
 
+@pytest.mark.skip(reason="not verified on TR-6S")
 def test_real_kits_keep_the_colours_inside_the_palette():
     kits = real_kits()
     if not kits:
@@ -83,6 +89,7 @@ def test_real_kits_keep_the_colours_inside_the_palette():
             assert 0 <= k.color(inst) < COLOR_COUNT, f"{k.name}/{inst}"
 
 
+@pytest.mark.skip(reason="not verified on TR-6S")
 def test_the_factory_default_groups_by_instrument_category():
     """
     This is the evidence the identification rests on: the default is not
@@ -100,6 +107,7 @@ def test_the_factory_default_groups_by_instrument_category():
     assert by["BD"] != by["SD"], "kick and snare should differ"
 
 
+@pytest.mark.skip(reason="not verified on TR-6S")
 def test_colours_actually_vary_between_kits():
     """A field that never changes would not be worth reading."""
     kits = real_kits()
@@ -111,6 +119,7 @@ def test_colours_actually_vary_between_kits():
 
 # -------------------------------------------------------------- the tool
 
+@pytest.mark.skip(reason="not verified on TR-6S")
 def test_set_color_writes_and_reports(wired):
     r = tools.call("kit.set_color", {"slot": 0, "colors": {"BD": 5, "SD": 9}})
     assert r["changed"]["BD"][1] == 5
@@ -118,16 +127,18 @@ def test_set_color_writes_and_reports(wired):
     assert k["BD"]["color"] == 5 and k["SD"]["color"] == 9
 
 
+@pytest.mark.skip(reason="not verified on TR-6S")
 def test_set_color_rejects_an_unknown_instrument(wired):
     with pytest.raises(ToolError, match="unknown instrument"):
         tools.call("kit.set_color", {"slot": 0, "colors": {"XX": 1}})
 
 
-def test_set_color_rejects_an_out_of_range_index(wired):
-    with pytest.raises(ToolError):
+def test_set_color_is_not_verified(wired):
+    with pytest.raises(ToolError, match="not verified"):
         tools.call("kit.set_color", {"slot": 0, "colors": {"BD": 99}})
 
 
+@pytest.mark.skip(reason="not verified on TR-6S")
 def test_set_color_admits_the_palette_is_unconfirmed(wired):
     r = tools.call("kit.set_color", {"slot": 0, "colors": {"BD": 2}})
     assert "not by watching the panel" in r["note"]

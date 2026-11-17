@@ -1297,9 +1297,13 @@ class Studio:
                     p = tool_device().read_pattern(slot)
                 except Exception:
                     continue
+                described = p.describe()
                 entry = {"slot": slot, "panel": slot_to_panel(slot),
-                         "name": p.name, "tempo": p.tempo, "kit": p.kit,
-                         "variations": sorted(p.describe()["variations"])}
+                         "name": p.name, "tempo": p.tempo, "kit": p.kit}
+                if "variations" in described:
+                    entry["variations"] = sorted(described["variations"])
+                else:
+                    entry["variations_unmapped"] = True
                 with self._lock:
                     self.index[slot] = entry
                 if slot % 8 == 0 or slot == hi:
