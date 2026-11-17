@@ -1,5 +1,11 @@
 # TR-6S Studio handoff — 2026-11-16
 
+## Progress — 2026-11-17
+
+- Kit inspect/diff offline tests merged in PR #1 (`tests/test_tr6s_kit_inspect.py`). They cover `Kit.inspect()`, `Kit.diff()`, `inspect-kit --file`, and `diff-kit` with no MIDI.
+- GitHub Actions (`.github/workflows/offline-tests.yml`) runs on pull requests and on pushes to `main`, on Python 3.12 (`requires-python` is `>=3.10`). `OFFLINE_SCOPE=verified` runs `unittest discover -s tests -p 'test_tr6s*.py'`, which includes the kit inspect tests. The job never collects `tests/hardware/`.
+- Set `OFFLINE_SCOPE` to `all` to run `python -m pytest tests --ignore=tests/hardware` once the inherited-suite repair is on `main`.
+
 ## Where the work stands
 
 - GitHub fork: `LeaveTheCapital/tr6s-studio`, based on `ideaCompany/tr8s-studio` commit `a62ae22`. `origin` points to the fork; `upstream` points to the TR-8S project. Current fork head before this handoff: `e7f486b`.
@@ -26,7 +32,7 @@ PYTHONPATH=src python3 -m tr6s.cli read-blob kit 1 /tmp/kit-001-new.bin
 PYTHONPATH=src python3 -m tr6s.cli inspect-kit 1
 PYTHONPATH=src python3 -m tr6s.cli inspect-kit 1 --file backups/tr6s-baseline-20261116/kit-001-candidate-baseline.bin
 PYTHONPATH=src python3 -m tr6s.cli diff-kit backups/tr6s-baseline-20261116/kit-001-candidate-baseline.bin /tmp/kit-001-new.bin
-PYTHONPATH=src python3 -m unittest discover -s tests -p test_tr6s_port.py -q
+PYTHONPATH=src python3 -m unittest discover -s tests -p 'test_tr6s*.py' -q
 ```
 
 `read-blob` creates a new file and refuses to overwrite one. Check `git status --short` before work; both repositories were clean when this handoff was written.
