@@ -23,7 +23,7 @@ tr6s diff-pattern /tmp/pattern-before.bin /tmp/pattern-after.bin
 
 The device must be stopped for a bulk read. The CLI uses the TR-6S MIDI 1 ALSA sequencer port so it can coexist with the Pi's MIDI router and connected E16. Set `TR6S_SEQ_PORT` to a `client:port` value if automatic discovery does not find it. The output path must not already exist.
 
-`inspect-kit` groups the hardware-confirmed name, raw reverb values, six raw tune values, decay and level on every track, and pan / reverb send / delay send for every track under `verified`. It shows tone ID and LFO bytes under `candidates`. Those candidate labels come from TR-8S bulk offsets applied to the confirmed compact TR-6S records; their meanings have not yet been checked by TR-6S panel changes. The command reads only and does not expose an editor.
+`inspect-kit` groups the hardware-confirmed name, kit-common header fields (reverb, delay, MFX, sidechain, kit LFO, kit level, and the six track colours), six raw tune values, and the compact-record fields verified on every track (decay, level, gain, pan, both sends, LFO dest/depth, and the SysEx-mapped instrument / Inst FX parameter bytes) under `verified`. Tone ID remains under `candidates`. Those candidate labels come from TR-8S bulk offsets applied to the confirmed compact TR-6S records and have not been checked by a TR-6S tone-select capture. The command reads only and does not expose an editor.
 
 `diff-kit` reports changed offsets between two saved kit blobs and labels a field as `verified_field` or `candidate_field`. A candidate label is a pointer for the next panel check, not a confirmed TR-6S field.
 
@@ -53,11 +53,13 @@ A 2026-11-18 E16 CC session on kit slot 1 verified the remaining pan, reverb-sen
 
 A later 2026-11-18 session, with the TR-6S already on kit 0 and no kit/pattern select sent, verified native TR-6S CCs for tune, decay, and level on every track of kit slot 0. Those CCs are received on Pattern Ch 10 and affect only the currently selected kit; E16 Lua SysEx writes address a specific kit slot instead. Layout is the same `388 + 52*track` record used on kit 1, with tune at base+2, decay at base+3, and level at base+4. Native scaling is `CC * 2` for tune, and `CC * 2` (CC 127 → 255) for decay and level. CH Tune was off-grid (141) and was restored with SysEx. Level CCs persisted through bulk reads in this session; selecting a kit can still refresh level bytes from the physical faders.
 
+A same-day live SysEx session on kit slot 0 (no kit or pattern select; every probe restored; final kit 0 matched the session baseline) paired documented DT1 addresses `10 00 <page> <param>` with blob offsets. Instrument gain is record +5 (SysEx `1@ 0A`), not +37; +37 is FM note (`1@ 47`). LFO dest/depth are +10/+11. Inst FX records start at byte 960 with a 32-byte stride (not 1024); parameter 1 is at record+5 (`2@ 09`). Kit-common reverb, delay, MFX, sidechain, kit LFO, kit level, and BD..OH colours landed in the header. Encodings, the address map, and the two unverified probes are in `next-plan.md`. Current pattern could not be read without a select, so pattern header writes were skipped.
+
 ## Current limits
 
-TR-8S Studio's pattern and kit editors still use TR-8S offsets. Kit tune, decay, pan, and send offsets that have been checked on the TR-6S are the verified kit fields above. Pattern name, tempo, kit, scale, shuffle, steps, and motion have not been established through TR-6S differential captures; `inspect-pattern` and `diff-pattern` keep those labels as candidates. Bulk writes, commits, sample uploads, and tone deletion are disabled in the transport. The web interface and the remaining tool commands have not yet been adapted or validated for the TR-6S. Do not treat them as a working TR-6S editor.
+TR-8S Studio's pattern and kit editors still use TR-8S offsets. Kit fields that have been checked on the TR-6S are the verified kit fields above. Pattern name, tempo, kit, scale, shuffle, steps, and motion have not been established through TR-6S differential captures; `inspect-pattern` and `diff-pattern` keep those labels as candidates. Bulk writes, commits, sample uploads, and tone deletion are disabled in the transport. The web interface and the remaining tool commands have not yet been adapted or validated for the TR-6S. Do not treat them as a working TR-6S editor.
 
-The next step is a hardware pattern capture: one reversible panel change, then `diff-pattern` against the before-blob. See `next-plan.md`. Kit fields that are still candidates are tone selection and LFO. Native TR-6S CCs for tune/decay/level sent earlier to MIDI 1 did not change kit slot 1 because the device was on kit 0; they do edit the current kit on channel 10.
+The next hardware step is a pattern capture that can name the current pattern without selecting a slot, or a tone-select check. See `next-plan.md`. Kit tone selection is still a candidate. Native TR-6S CCs for tune/decay/level sent earlier to MIDI 1 did not change kit slot 1 because the device was on kit 0; they do edit the current kit on channel 10.
 
 Differential captures on kit slot 1 have confirmed raw Reverb Time at offset 69 (`08` to `09` for one increment) and raw Reverb Level at offset 70 (`00` to `01`). Each change affected exactly one byte, and the full blob matched its baseline after restoration. Both fields are exposed for reading; their display-value mappings remain to be verified.
 
@@ -71,7 +73,7 @@ OH Tune changed only byte 650 (`80` to `81`), then the full blob matched baselin
 
 LT Tune changed only byte 494 (`80` to `81`) and returned to a full baseline match after restoration. This verifies the third compact record. The raw byte is available as `Kit.lt_tune_raw`.
 
-CH Tune changed only byte 598 (`7B` to `7C`) and returned to a full baseline match after restoration. This confirms the fifth compact record and completes a direct tune-offset check for all six TR-6S tracks. `Kit.tune_raw(track)` reads these raw bytes; the signed/display mapping remains unverified. Decay, level, pan, and both sends are now verified on every track; LFO and tone selection are still candidates.
+CH Tune changed only byte 598 (`7B` to `7C`) and returned to a full baseline match after restoration. This confirms the fifth compact record and completes a direct tune-offset check for all six TR-6S tracks. `Kit.tune_raw(track)` reads these raw bytes; the signed/display mapping remains unverified. Decay, level, gain, pan, both sends, LFO dest/depth, and the SysEx-mapped instrument / Inst FX parameter bytes are now verified on every track; tone selection is still a candidate.
 
 ## Source
 
