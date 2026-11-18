@@ -1,8 +1,9 @@
 """Offline coverage for TR-6S kit inspection, kit diffs, and their CLI commands.
 
 Synthetic 1,312-byte blobs stand in for hardware captures. Verified offsets are
-the hardware-checked raw bytes (reverb time/level, six tune positions, BD
-decay/pan/reverb send/delay send, and OH pan/delay send). Candidate labels are
+the hardware-checked raw bytes (reverb time/level, six tune positions,
+decay and level on every track, and pan/reverb send/delay send on every
+track). Candidate labels are
 the TR-8S field layout applied to those compact records. diff() leaves
 candidate_field empty when the changed offset is already verified.
 """
@@ -25,15 +26,39 @@ EXPECTED_VERIFIED = {
     70: "reverb_level_raw",
     390: "BD_tune_raw",
     391: "BD_decay_raw",
+    392: "BD_level_raw",
     394: "BD_pan_raw",
     395: "BD_reverb_send_raw",
     396: "BD_delay_send_raw",
     442: "SD_tune_raw",
+    443: "SD_decay_raw",
+    444: "SD_level_raw",
+    446: "SD_pan_raw",
+    447: "SD_reverb_send_raw",
+    448: "SD_delay_send_raw",
     494: "LT_tune_raw",
+    495: "LT_decay_raw",
+    496: "LT_level_raw",
+    498: "LT_pan_raw",
+    499: "LT_reverb_send_raw",
+    500: "LT_delay_send_raw",
     546: "HC_tune_raw",
+    547: "HC_decay_raw",
+    548: "HC_level_raw",
+    550: "HC_pan_raw",
+    551: "HC_reverb_send_raw",
+    552: "HC_delay_send_raw",
     598: "CH_tune_raw",
+    599: "CH_decay_raw",
+    600: "CH_level_raw",
+    602: "CH_pan_raw",
+    603: "CH_reverb_send_raw",
+    604: "CH_delay_send_raw",
     650: "OH_tune_raw",
+    651: "OH_decay_raw",
+    652: "OH_level_raw",
     654: "OH_pan_raw",
+    655: "OH_reverb_send_raw",
     656: "OH_delay_send_raw",
 }
 
@@ -52,6 +77,10 @@ INSPECT_PATHS = {
         ("verified", "bd_decay_raw"),
         ("candidates", "tracks", "BD", "decay_raw_verified"),
     ),
+    392: (
+        ("verified", "bd_level_raw"),
+        ("candidates", "tracks", "BD", "level_raw_verified"),
+    ),
     394: (
         ("verified", "bd_pan_raw"),
         ("candidates", "tracks", "BD", "pan_raw_verified"),
@@ -68,25 +97,117 @@ INSPECT_PATHS = {
         ("verified", "tune_raw_by_track", "SD"),
         ("candidates", "tracks", "SD", "tune_raw_verified"),
     ),
+    443: (
+        ("verified", "sd_decay_raw"),
+        ("candidates", "tracks", "SD", "decay_raw_verified"),
+    ),
+    444: (
+        ("verified", "sd_level_raw"),
+        ("candidates", "tracks", "SD", "level_raw_verified"),
+    ),
+    446: (
+        ("verified", "sd_pan_raw"),
+        ("candidates", "tracks", "SD", "pan_raw_verified"),
+    ),
+    447: (
+        ("verified", "sd_reverb_send_raw"),
+        ("candidates", "tracks", "SD", "reverb_send_raw_verified"),
+    ),
+    448: (
+        ("verified", "sd_delay_send_raw"),
+        ("candidates", "tracks", "SD", "delay_send_raw_verified"),
+    ),
     494: (
         ("verified", "tune_raw_by_track", "LT"),
         ("candidates", "tracks", "LT", "tune_raw_verified"),
+    ),
+    495: (
+        ("verified", "lt_decay_raw"),
+        ("candidates", "tracks", "LT", "decay_raw_verified"),
+    ),
+    496: (
+        ("verified", "lt_level_raw"),
+        ("candidates", "tracks", "LT", "level_raw_verified"),
+    ),
+    498: (
+        ("verified", "lt_pan_raw"),
+        ("candidates", "tracks", "LT", "pan_raw_verified"),
+    ),
+    499: (
+        ("verified", "lt_reverb_send_raw"),
+        ("candidates", "tracks", "LT", "reverb_send_raw_verified"),
+    ),
+    500: (
+        ("verified", "lt_delay_send_raw"),
+        ("candidates", "tracks", "LT", "delay_send_raw_verified"),
     ),
     546: (
         ("verified", "tune_raw_by_track", "HC"),
         ("candidates", "tracks", "HC", "tune_raw_verified"),
     ),
+    547: (
+        ("verified", "hc_decay_raw"),
+        ("candidates", "tracks", "HC", "decay_raw_verified"),
+    ),
+    548: (
+        ("verified", "hc_level_raw"),
+        ("candidates", "tracks", "HC", "level_raw_verified"),
+    ),
+    550: (
+        ("verified", "hc_pan_raw"),
+        ("candidates", "tracks", "HC", "pan_raw_verified"),
+    ),
+    551: (
+        ("verified", "hc_reverb_send_raw"),
+        ("candidates", "tracks", "HC", "reverb_send_raw_verified"),
+    ),
+    552: (
+        ("verified", "hc_delay_send_raw"),
+        ("candidates", "tracks", "HC", "delay_send_raw_verified"),
+    ),
     598: (
         ("verified", "tune_raw_by_track", "CH"),
         ("candidates", "tracks", "CH", "tune_raw_verified"),
+    ),
+    599: (
+        ("verified", "ch_decay_raw"),
+        ("candidates", "tracks", "CH", "decay_raw_verified"),
+    ),
+    600: (
+        ("verified", "ch_level_raw"),
+        ("candidates", "tracks", "CH", "level_raw_verified"),
+    ),
+    602: (
+        ("verified", "ch_pan_raw"),
+        ("candidates", "tracks", "CH", "pan_raw_verified"),
+    ),
+    603: (
+        ("verified", "ch_reverb_send_raw"),
+        ("candidates", "tracks", "CH", "reverb_send_raw_verified"),
+    ),
+    604: (
+        ("verified", "ch_delay_send_raw"),
+        ("candidates", "tracks", "CH", "delay_send_raw_verified"),
     ),
     650: (
         ("verified", "tune_raw_by_track", "OH"),
         ("candidates", "tracks", "OH", "tune_raw_verified"),
     ),
+    651: (
+        ("verified", "oh_decay_raw"),
+        ("candidates", "tracks", "OH", "decay_raw_verified"),
+    ),
+    652: (
+        ("verified", "oh_level_raw"),
+        ("candidates", "tracks", "OH", "level_raw_verified"),
+    ),
     654: (
         ("verified", "oh_pan_raw"),
         ("candidates", "tracks", "OH", "pan_raw_verified"),
+    ),
+    655: (
+        ("verified", "oh_reverb_send_raw"),
+        ("candidates", "tracks", "OH", "reverb_send_raw_verified"),
     ),
     656: (
         ("verified", "oh_delay_send_raw"),
@@ -94,8 +215,11 @@ INSPECT_PATHS = {
     ),
 }
 
-# Relative candidate bytes inside each 52-byte record. Tune is +2 and is not a
-# candidate diff slot. The third column is the inspect() key on a non-verified track.
+# Relative field bytes inside each 52-byte record. Tune is +2 and is not a
+# candidate diff slot. Decay and level are now verified; they remain listed
+# here so the candidate-only test can skip them when they appear in
+# EXPECTED_VERIFIED. The third column is the inspect() key when that byte is
+# still a candidate.
 CANDIDATE_FIELDS = (
     (0, "tone_id_low", "tone_id_candidate"),
     (1, "tone_id_high", "tone_id_candidate"),
@@ -129,7 +253,7 @@ def kit_blob() -> bytes:
     raw[389] = 0x12
     raw[390] = 0x7C  # BD tune
     raw[391] = 0x00  # BD decay
-    raw[392] = 0x64  # BD level candidate
+    raw[392] = 0x64  # BD level
     raw[394] = 0x80  # BD pan
     raw[395] = 0x00  # BD reverb send
     raw[396] = 0x00  # BD delay send
@@ -166,9 +290,9 @@ def expected_report() -> dict:
             "record_offset": base,
             "tone_id_candidate": tone,
             "tune_raw_verified": tune,
-            "level_raw_candidate": level,
+            "decay_raw_verified": decay,
+            "level_raw_verified": level,
             "lfo_raw_candidate": lfo,
-            label("decay_raw", "decay"): decay,
             label("pan_raw", "pan"): pan,
             label("reverb_send_raw", "reverb_send"): reverb,
             label("delay_send_raw", "delay_send"): delay,
@@ -180,10 +304,34 @@ def expected_report() -> dict:
             "reverb_time_raw": 0x08,
             "reverb_level_raw": 0x00,
             "bd_decay_raw": 0x00,
+            "sd_decay_raw": 0x31,
+            "lt_decay_raw": 0x32,
+            "hc_decay_raw": 0x33,
+            "ch_decay_raw": 0x34,
+            "oh_decay_raw": 0x35,
+            "bd_level_raw": 0x64,
+            "sd_level_raw": 0x41,
+            "lt_level_raw": 0x42,
+            "hc_level_raw": 0x43,
+            "ch_level_raw": 0x44,
+            "oh_level_raw": 0x45,
             "bd_pan_raw": 0x80,
             "bd_reverb_send_raw": 0x00,
             "bd_delay_send_raw": 0x00,
+            "sd_pan_raw": 0x51,
+            "sd_reverb_send_raw": 0x61,
+            "sd_delay_send_raw": 0x71,
+            "lt_pan_raw": 0x52,
+            "lt_reverb_send_raw": 0x62,
+            "lt_delay_send_raw": 0x72,
+            "hc_pan_raw": 0x53,
+            "hc_reverb_send_raw": 0x63,
+            "hc_delay_send_raw": 0x73,
+            "ch_pan_raw": 0x54,
+            "ch_reverb_send_raw": 0x64,
+            "ch_delay_send_raw": 0x74,
             "oh_pan_raw": 0x55,
+            "oh_reverb_send_raw": 0x65,
             "oh_delay_send_raw": 0x75,
             "tune_raw_by_track": {
                 "BD": 0x7C,
@@ -198,13 +346,17 @@ def expected_report() -> dict:
             "source": "TR-8S bulk field offsets in confirmed compact TR-6S records",
             "tracks": {
                 "BD": record(388, 0x1234, 0x7C, 0x00, 0x64, 0x80, 0x00, 0x00, 0x03,
-                             verified=("decay", "pan", "reverb_send", "delay_send")),
-                "SD": record(440, 0x2111, 0x80, 0x31, 0x41, 0x51, 0x61, 0x71, 0x06),
-                "LT": record(492, 0x2212, 0x80, 0x32, 0x42, 0x52, 0x62, 0x72, 0x07),
-                "HC": record(544, 0x2313, 0x80, 0x33, 0x43, 0x53, 0x63, 0x73, 0x08),
-                "CH": record(596, 0x2414, 0x7B, 0x34, 0x44, 0x54, 0x64, 0x74, 0x09),
+                             verified=("decay", "level", "pan", "reverb_send", "delay_send")),
+                "SD": record(440, 0x2111, 0x80, 0x31, 0x41, 0x51, 0x61, 0x71, 0x06,
+                             verified=("decay", "level", "pan", "reverb_send", "delay_send")),
+                "LT": record(492, 0x2212, 0x80, 0x32, 0x42, 0x52, 0x62, 0x72, 0x07,
+                             verified=("decay", "level", "pan", "reverb_send", "delay_send")),
+                "HC": record(544, 0x2313, 0x80, 0x33, 0x43, 0x53, 0x63, 0x73, 0x08,
+                             verified=("decay", "level", "pan", "reverb_send", "delay_send")),
+                "CH": record(596, 0x2414, 0x7B, 0x34, 0x44, 0x54, 0x64, 0x74, 0x09,
+                             verified=("decay", "level", "pan", "reverb_send", "delay_send")),
                 "OH": record(648, 0x2515, 0x80, 0x35, 0x45, 0x55, 0x65, 0x75, 0x0A,
-                             verified=("pan", "delay_send")),
+                             verified=("decay", "level", "pan", "reverb_send", "delay_send")),
             },
         },
     }
@@ -261,39 +413,22 @@ class KitInspectTests(unittest.TestCase):
         report = Kit.from_bytes(kit_blob()).inspect()
         self.assertEqual(report, expected_report())
 
-        bd = report["candidates"]["tracks"]["BD"]
-        sd = report["candidates"]["tracks"]["SD"]
-        oh = report["candidates"]["tracks"]["OH"]
-        self.assertIn("decay_raw_verified", bd)
-        self.assertIn("pan_raw_verified", bd)
-        self.assertIn("reverb_send_raw_verified", bd)
-        self.assertIn("delay_send_raw_verified", bd)
-        self.assertNotIn("decay_raw_candidate", bd)
-        self.assertNotIn("pan_raw_candidate", bd)
-        self.assertNotIn("reverb_send_raw_candidate", bd)
-        self.assertNotIn("delay_send_raw_candidate", bd)
-        self.assertIn("decay_raw_candidate", sd)
-        self.assertIn("pan_raw_candidate", sd)
-        self.assertIn("reverb_send_raw_candidate", sd)
-        self.assertIn("delay_send_raw_candidate", sd)
-        self.assertNotIn("decay_raw_verified", sd)
-        self.assertNotIn("pan_raw_verified", sd)
-        self.assertNotIn("reverb_send_raw_verified", sd)
-        self.assertNotIn("delay_send_raw_verified", sd)
-        self.assertIn("decay_raw_candidate", oh)
-        self.assertIn("pan_raw_verified", oh)
-        self.assertIn("reverb_send_raw_candidate", oh)
-        self.assertIn("delay_send_raw_verified", oh)
-        self.assertNotIn("decay_raw_verified", oh)
-        self.assertNotIn("pan_raw_candidate", oh)
-        self.assertNotIn("reverb_send_raw_verified", oh)
-        self.assertNotIn("delay_send_raw_candidate", oh)
-        for record in (bd, sd, oh):
+        tracks = report["candidates"]["tracks"]
+        for name, record in tracks.items():
+            self.assertIn("pan_raw_verified", record)
+            self.assertIn("reverb_send_raw_verified", record)
+            self.assertIn("delay_send_raw_verified", record)
+            self.assertNotIn("pan_raw_candidate", record)
+            self.assertNotIn("reverb_send_raw_candidate", record)
+            self.assertNotIn("delay_send_raw_candidate", record)
             self.assertIn("tune_raw_verified", record)
             self.assertIn("tone_id_candidate", record)
-            self.assertIn("level_raw_candidate", record)
+            self.assertIn("decay_raw_verified", record)
+            self.assertIn("level_raw_verified", record)
             self.assertIn("lfo_raw_candidate", record)
             self.assertNotIn("tune_raw_candidate", record)
+            self.assertNotIn("decay_raw_candidate", record)
+            self.assertNotIn("level_raw_candidate", record)
 
     def test_inspect_and_diff_follow_one_verified_byte(self):
         blob = kit_blob()
@@ -348,9 +483,9 @@ class KitInspectTests(unittest.TestCase):
                         self.assertEqual(dig(after, path) & 0xFF, dig(before, path) & 0xFF)
                     else:
                         self.assertEqual(dig(after, path), updated)
-        # Six tracks, eight candidate slots, minus BD decay/pan/reverb/delay
-        # and the now-verified OH pan/delay send.
-        self.assertEqual(seen, 6 * len(CANDIDATE_FIELDS) - 6)
+        # Six tracks, eight listed slots, minus decay, level, and
+        # pan/reverb/delay on every track (6*5 = 30).
+        self.assertEqual(seen, 6 * len(CANDIDATE_FIELDS) - 30)
 
     def test_diff_leaves_unmapped_bytes_unlabelled(self):
         blob = kit_blob()
@@ -401,8 +536,8 @@ class KitInspectTests(unittest.TestCase):
                 "offset": 443,
                 "before": original[443],
                 "after": mutated[443],
-                "verified_field": None,
-                "candidate_field": "SD_decay_raw",
+                "verified_field": "SD_decay_raw",
+                "candidate_field": None,
             },
             {
                 "offset": 650,
@@ -467,7 +602,7 @@ class KitInspectCliTests(unittest.TestCase):
         before_blob = kit_blob()
         after_blob = bytearray(before_blob)
         after_blob[69] = (after_blob[69] + 1) & 0xFF    # verified reverb time
-        after_blob[443] = (after_blob[443] + 1) & 0xFF  # candidate SD decay
+        after_blob[443] = (after_blob[443] + 1) & 0xFF  # verified SD decay
         after_blob[71] = (after_blob[71] + 1) & 0xFF    # unmapped
         after_blob = bytes(after_blob)
         library = Kit.from_bytes(before_blob).diff(Kit.from_bytes(after_blob))
@@ -487,8 +622,8 @@ class KitInspectCliTests(unittest.TestCase):
         by_offset = {row["offset"]: row for row in report["changes"]}
         self.assertEqual(by_offset[69]["verified_field"], "reverb_time_raw")
         self.assertIsNone(by_offset[69]["candidate_field"])
-        self.assertIsNone(by_offset[443]["verified_field"])
-        self.assertEqual(by_offset[443]["candidate_field"], "SD_decay_raw")
+        self.assertEqual(by_offset[443]["verified_field"], "SD_decay_raw")
+        self.assertIsNone(by_offset[443]["candidate_field"])
         self.assertIsNone(by_offset[71]["verified_field"])
         self.assertIsNone(by_offset[71]["candidate_field"])
 
