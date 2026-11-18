@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 from .kit import Kit
+from .pattern import Pattern
 from .sequencer import SequencerTransport
 from .transport import BLOB_SIZES, TransportError
 
@@ -39,6 +40,17 @@ def main(argv=None) -> int:
     diff.add_argument("before", type=Path)
     diff.add_argument("after", type=Path)
 
+    inspect_pattern = commands.add_parser(
+        "inspect-pattern", help="inspect candidate pattern fields")
+    inspect_pattern.add_argument("slot", type=int, help="zero-based pattern slot")
+    inspect_pattern.add_argument("--file", type=Path,
+                                 help="inspect a saved blob instead of reading MIDI")
+
+    diff_pattern = commands.add_parser(
+        "diff-pattern", help="compare two saved pattern blobs")
+    diff_pattern.add_argument("before", type=Path)
+    diff_pattern.add_argument("after", type=Path)
+
     args = parser.parse_args(argv)
     try:
         if args.command == "info":
@@ -64,12 +76,30 @@ def main(argv=None) -> int:
                     blob = transport.read_blob("kit", args.slot)
                 source = "TR-6S MIDI 1"
             result = {"slot": args.slot, "source": source, **Kit.from_bytes(blob).inspect()}
-        else:
+        elif args.command == "diff-kit":
             before = Kit.from_bytes(args.before.read_bytes())
             after = Kit.from_bytes(args.after.read_bytes())
             changes = before.diff(after)
             result = {"before": str(args.before), "after": str(args.after),
                       "changed_bytes": len(changes), "changes": changes}
+        elif args.command == "inspect-pattern":
+            _slot(args.slot, "pattern")
+            if args.file:
+                blob = args.file.read_bytes()
+                source = str(args.file)
+            else:
+                with SequencerTransport() as transport:
+                    blob = transport.read_blob("pattern", args.slot)
+                source = "TR-6S MIDI 1"
+            result = {"slot": args.slot, "source": source,
+                      **Pattern.from_bytes(blob).inspect()}
+        else:
+            before = Pattern.from_bytes(args.before.read_bytes())
+            after = Pattern.from_bytes(args.after.read_bytes())
+            ranges = before.diff(after)
+            result = {"before": str(args.before), "after": str(args.after),
+                      "changed_bytes": sum(item["length"] for item in ranges),
+                      "ranges": ranges}
         print(json.dumps(result, indent=2))
         return 0
     except (OSError, ValueError, TransportError, subprocess.SubprocessError) as error:
