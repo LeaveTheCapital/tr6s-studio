@@ -1,10 +1,10 @@
 """Offline coverage for TR-6S kit inspection, kit diffs, and their CLI commands.
 
 Synthetic 1,312-byte blobs stand in for hardware captures. Verified offsets are
-the panel-checked raw bytes (reverb time/level, six tune positions, and BD
-decay/pan/reverb send/delay send). Candidate labels are the TR-8S field layout
-applied to those compact records. diff() leaves candidate_field empty when the
-changed offset is already verified.
+the hardware-checked raw bytes (reverb time/level, six tune positions, BD
+decay/pan/reverb send/delay send, and OH pan/delay send). Candidate labels are
+the TR-8S field layout applied to those compact records. diff() leaves
+candidate_field empty when the changed offset is already verified.
 """
 
 import json
@@ -33,6 +33,8 @@ EXPECTED_VERIFIED = {
     546: "HC_tune_raw",
     598: "CH_tune_raw",
     650: "OH_tune_raw",
+    654: "OH_pan_raw",
+    656: "OH_delay_send_raw",
 }
 
 # inspect() paths that move when only that verified byte is incremented.
@@ -81,6 +83,14 @@ INSPECT_PATHS = {
     650: (
         ("verified", "tune_raw_by_track", "OH"),
         ("candidates", "tracks", "OH", "tune_raw_verified"),
+    ),
+    654: (
+        ("verified", "oh_pan_raw"),
+        ("candidates", "tracks", "OH", "pan_raw_verified"),
+    ),
+    656: (
+        ("verified", "oh_delay_send_raw"),
+        ("candidates", "tracks", "OH", "delay_send_raw_verified"),
     ),
 }
 
@@ -149,18 +159,19 @@ def kit_blob() -> bytes:
 
 
 def expected_report() -> dict:
-    def record(base, tone, tune, decay, level, pan, reverb, delay, lfo, *, verified_motion):
-        motion = "verified" if verified_motion else "candidate"
+    def record(base, tone, tune, decay, level, pan, reverb, delay, lfo, *, verified=()):
+        def label(name, field):
+            return f"{name}_{'verified' if field in verified else 'candidate'}"
         return {
             "record_offset": base,
             "tone_id_candidate": tone,
             "tune_raw_verified": tune,
             "level_raw_candidate": level,
             "lfo_raw_candidate": lfo,
-            f"decay_raw_{motion}": decay,
-            f"pan_raw_{motion}": pan,
-            f"reverb_send_raw_{motion}": reverb,
-            f"delay_send_raw_{motion}": delay,
+            label("decay_raw", "decay"): decay,
+            label("pan_raw", "pan"): pan,
+            label("reverb_send_raw", "reverb_send"): reverb,
+            label("delay_send_raw", "delay_send"): delay,
         }
 
     return {
@@ -172,6 +183,8 @@ def expected_report() -> dict:
             "bd_pan_raw": 0x80,
             "bd_reverb_send_raw": 0x00,
             "bd_delay_send_raw": 0x00,
+            "oh_pan_raw": 0x55,
+            "oh_delay_send_raw": 0x75,
             "tune_raw_by_track": {
                 "BD": 0x7C,
                 "SD": 0x80,
@@ -185,17 +198,13 @@ def expected_report() -> dict:
             "source": "TR-8S bulk field offsets in confirmed compact TR-6S records",
             "tracks": {
                 "BD": record(388, 0x1234, 0x7C, 0x00, 0x64, 0x80, 0x00, 0x00, 0x03,
-                             verified_motion=True),
-                "SD": record(440, 0x2111, 0x80, 0x31, 0x41, 0x51, 0x61, 0x71, 0x06,
-                             verified_motion=False),
-                "LT": record(492, 0x2212, 0x80, 0x32, 0x42, 0x52, 0x62, 0x72, 0x07,
-                             verified_motion=False),
-                "HC": record(544, 0x2313, 0x80, 0x33, 0x43, 0x53, 0x63, 0x73, 0x08,
-                             verified_motion=False),
-                "CH": record(596, 0x2414, 0x7B, 0x34, 0x44, 0x54, 0x64, 0x74, 0x09,
-                             verified_motion=False),
+                             verified=("decay", "pan", "reverb_send", "delay_send")),
+                "SD": record(440, 0x2111, 0x80, 0x31, 0x41, 0x51, 0x61, 0x71, 0x06),
+                "LT": record(492, 0x2212, 0x80, 0x32, 0x42, 0x52, 0x62, 0x72, 0x07),
+                "HC": record(544, 0x2313, 0x80, 0x33, 0x43, 0x53, 0x63, 0x73, 0x08),
+                "CH": record(596, 0x2414, 0x7B, 0x34, 0x44, 0x54, 0x64, 0x74, 0x09),
                 "OH": record(648, 0x2515, 0x80, 0x35, 0x45, 0x55, 0x65, 0x75, 0x0A,
-                             verified_motion=False),
+                             verified=("pan", "delay_send")),
             },
         },
     }
@@ -263,15 +272,22 @@ class KitInspectTests(unittest.TestCase):
         self.assertNotIn("pan_raw_candidate", bd)
         self.assertNotIn("reverb_send_raw_candidate", bd)
         self.assertNotIn("delay_send_raw_candidate", bd)
-        for record in (sd, oh):
-            self.assertIn("decay_raw_candidate", record)
-            self.assertIn("pan_raw_candidate", record)
-            self.assertIn("reverb_send_raw_candidate", record)
-            self.assertIn("delay_send_raw_candidate", record)
-            self.assertNotIn("decay_raw_verified", record)
-            self.assertNotIn("pan_raw_verified", record)
-            self.assertNotIn("reverb_send_raw_verified", record)
-            self.assertNotIn("delay_send_raw_verified", record)
+        self.assertIn("decay_raw_candidate", sd)
+        self.assertIn("pan_raw_candidate", sd)
+        self.assertIn("reverb_send_raw_candidate", sd)
+        self.assertIn("delay_send_raw_candidate", sd)
+        self.assertNotIn("decay_raw_verified", sd)
+        self.assertNotIn("pan_raw_verified", sd)
+        self.assertNotIn("reverb_send_raw_verified", sd)
+        self.assertNotIn("delay_send_raw_verified", sd)
+        self.assertIn("decay_raw_candidate", oh)
+        self.assertIn("pan_raw_verified", oh)
+        self.assertIn("reverb_send_raw_candidate", oh)
+        self.assertIn("delay_send_raw_verified", oh)
+        self.assertNotIn("decay_raw_verified", oh)
+        self.assertNotIn("pan_raw_candidate", oh)
+        self.assertNotIn("reverb_send_raw_verified", oh)
+        self.assertNotIn("delay_send_raw_candidate", oh)
         for record in (bd, sd, oh):
             self.assertIn("tune_raw_verified", record)
             self.assertIn("tone_id_candidate", record)
@@ -332,8 +348,9 @@ class KitInspectTests(unittest.TestCase):
                         self.assertEqual(dig(after, path) & 0xFF, dig(before, path) & 0xFF)
                     else:
                         self.assertEqual(dig(after, path), updated)
-        # Six tracks, eight candidate slots, minus BD decay/pan/reverb/delay.
-        self.assertEqual(seen, 6 * len(CANDIDATE_FIELDS) - 4)
+        # Six tracks, eight candidate slots, minus BD decay/pan/reverb/delay
+        # and the now-verified OH pan/delay send.
+        self.assertEqual(seen, 6 * len(CANDIDATE_FIELDS) - 6)
 
     def test_diff_leaves_unmapped_bytes_unlabelled(self):
         blob = kit_blob()

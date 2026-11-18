@@ -3,6 +3,7 @@
 ## Progress — 2026-11-18
 
 - Read-only `inspect-pattern` and `diff-pattern` are in. They mirror kit inspection for a 24,504-byte blob, including `inspect-pattern --file`. No pattern field is verified: name, tempo, kit, and scale are TR-8S header candidates. Shuffle, steps, variations, and motion stay `not verified`, and their inherited offsets are candidate diff labels only. Promoting any of them still needs a differential panel capture.
+- OH Pan (byte 654) and OH Delay Send (byte 656) are now verified kit fields, from E16 CC captures on kit slot 1 that each changed one byte and then restored the whole 1,312-byte blob.
 
 ## Progress — 2026-11-17
 
@@ -26,10 +27,12 @@
 - Firmware tested: `1.51`, revision `0BDE`. Model ID: `00 00 00 6D`. The utility bulk reads are DT1 requests with 4-byte 7-bit index and count. Confirmed blob sizes: system **752**, pattern **24,504**, kit **1,312** bytes.
 - Earlier claims that TR-6S blobs were 754/24,599/1,317 bytes were wrong: the old `aseqdump` parser counted the client number on each continuation line as payload. That parser and the docs were fixed in the companion repo. Independent raw MIDI and corrected sequencer reads agreed byte for byte.
 - `read-blob` checks playing status and refuses bulk reads while the machine is playing. Do not stop the sequencer or change routes automatically.
+- `/dev/snd/seq` is now available after an execution-permission change. The Pi, TR-6S, and E16 needed no reconfiguration. Firmware during that session was still `1.51`/`0BDE`, with the TR-6S stopped.
+- ALSA client numbers can change. The previously observed E16 port `28:0` was an E16 **output** connected to TR-6S MIDI 1, not proof of an E16 input. Discover the E16 **input** with `aconnect -i` before sending CCs into a loaded script.
 
 ## Local captures and useful commands
 
-Captures are in `backups/tr6s-baseline-20261116/`, ignored by Git and **not uploaded to GitHub**. `kit-001-candidate-baseline.bin` is the restored kit slot 1 reference. `pattern-000.bin` and `system.bin` are initial reads. The directory also holds before/after kit captures for each checked parameter; every completed panel change was reversed and the full kit matched its baseline. These files stay on this Pi only, so preserve them when changing workspaces.
+Captures are in `backups/tr6s-baseline-20261116/`, ignored by Git and **not uploaded to GitHub**. `kit-001-candidate-baseline.bin` is the restored kit slot 1 reference. `pattern-000.bin` and `system.bin` are initial reads. The directory also holds before/after kit captures for each checked parameter; every completed panel change was reversed and the full kit matched its baseline. The same folder includes an E16 CC session with `e16-` prefixes: `e16-kit-001-fresh-baseline.bin` plus change/restore pairs for Reverb Time, OH Pan, and OH Delay Send. These files stay on this Pi only, so preserve them when changing workspaces.
 
 ```sh
 cd /home/hellohenry/code/tr6s-studio
@@ -64,8 +67,12 @@ All values below are **raw stored bytes**, not fully mapped display values. The 
 | BD Pan | 394 | centre `80` → right `81` |
 | BD Reverb Send | 395 | `00` → `01` |
 | BD Delay Send | 396 | `00` → `01` |
+| OH Pan | 654 | E16 ch 12 CC 70 value `82`: `A6` → `A4`; value `83` restored |
+| OH Delay Send | 656 | E16 ch 12 CC 74 value `111`: `E0` → `DE`; value `112` restored |
 
-`src/tr6s/kit.py` exposes those verified reads and separately labels TR-8S-derived candidate offsets for tone ID, other tracks' decay/pan/sends, level, and LFO. Do not treat candidate labels as verified. Selecting kit slot 1 changed kit slot 0 at offsets 392, 444, and 600, which fit physical fader level positions. Kit selection itself can refresh these bytes, so keep selection separate from a parameter diff.
+`src/tr6s/kit.py` exposes those verified reads and separately labels TR-8S-derived candidate offsets for tone ID, remaining decay/pan/sends, level, and LFO. Do not treat candidate labels as verified. Selecting kit slot 1 changed kit slot 0 at offsets 392, 444, and 600, which fit physical fader level positions. Kit selection itself can refresh these bytes, so keep selection separate from a parameter diff.
+
+An E16 session independently confirmed Reverb Time as well: channel 11 CC 3 value `5` changed only kit 1 byte 69 from `8` to `10`; value `4` restored the entire 1,312-byte blob. The same method verified OH Pan and OH Delay Send above.
 
 ## Next work: pattern read mapping
 
@@ -75,4 +82,6 @@ All values below are **raw stored bytes**, not fully mapped display values. The 
 4. Hardware-blocked. Ask for one reversible panel change, such as toggling one known BD step in variation A. Capture after, run `diff-pattern`, then ask for the same step to be toggled back and confirm the entire blob matches baseline. A second track near the end (OH) can distinguish compact TR-6S step order from retained TR-8S positions: a compact OH hit will not carry the candidate label `A_OH_step00_velocity`. Keep changes one at a time and record the exact selected variation and step number.
 5. Hardware-blocked. Map header items (tempo, kit reference, scale, shuffle), variation blocks, steps, and motion only as evidence supports them. Promote a field from candidate to verified in code and docs after a clean differential capture. Leave writers blocked until a sufficiently complete map, backups, and an explicit safe write test plan exist. Upstream observed that even an uncommitted bulk send can alter a stored slot immediately.
 
-If returning to kit work instead, the remaining high-value candidate checks are tone selection, instrument level, LFO, and one non-BD decay/pan/send to test field stride. The standard live parameter SysEx map in the companion docs gives addresses and nibble-encoded values, **not positions in the opaque bulk kit blob**. Individual parameter RQ1 probes gave no reply in one attempt; use bulk differential reads as the established method.
+If returning to kit work instead, the remaining high-value candidate checks are tone selection, instrument level, LFO, non-BD decay, and the still-unverified pan/send fields (OH Reverb Send, plus pan and sends on SD, LT, HC, and CH). Field stride is already supported by the verified OH pan and delay-send offsets. The standard live parameter SysEx map in the companion docs gives addresses and nibble-encoded values, **not positions in the opaque bulk kit blob**. Individual parameter RQ1 probes gave no reply in one attempt; use bulk differential reads as the established method.
+
+For further E16 CC checks: find the E16 **input** with `aconnect -i` and confirm the loaded script receives external channel 11/12 CC there. Do not treat `28:0` as that input. Save a fresh kit slot 1 baseline, choose one mapped CC and a nearby value whose original setting is known, send the CC to the E16 input, read and diff the kit, then send the exact original CC value and require a whole-blob match. An ordinary TR-6S CC route can be checked the same way after confirming its receive channel and CC map. Stop on an unexpected diff or failure to restore; do not infer original CC values from the bulk byte until their scaling is verified.
