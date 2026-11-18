@@ -2,13 +2,18 @@
 Layer 2 — TR-6S pattern blob. Header reads are provisional; the TR-8S
 variation and step layout below remains disabled pending differential capture.
 
-Layout is documented in docs/PROTOCOL.md. In brief:
+Nothing in this layout has a TR-6S panel diff yet. `inspect()` and `diff()`
+therefore leave `verified` empty and attach these offsets only as candidates.
+Shuffle, steps, variations, and motion stay not verified.
+
+Candidate layout, inherited from the TR-8S (docs/PROTOCOL.md):
 
     0..15    name             16..17  tempo (tenths of a BPM)
     18       kit (1-based)    19      scale        32  shuffle
+    48       variation mask
     144 + blk*2436            variation block, blk 0..9
       +4 + track*64 + step*4  4 bytes per step
-        instrument tracks 0..10 : byte 0 = velocity
+        instrument tracks 0..10 : byte 0 = velocity (TR-8S order, 11 tracks)
         motion lanes 12..22     : 0 = tune, 2 = ctrl, 3 = presence mask
 """
 
@@ -34,6 +39,16 @@ OFF_TEMPO = 16
 OFF_KIT = 18
 OFF_SCALE = 19
 OFF_SHUFFLE = 32
+OFF_VARIATION_MASK = 48
+
+# Inherited TR-8S instrument order. The TR-6S panel is BD SD LT HC CH OH;
+# that compact order is not established inside a pattern blob.
+CANDIDATE_TR8S_TRACKS = [
+    "BD", "SD", "LT", "MT", "HT", "RS", "HC", "CH", "OH", "CC", "RC",
+]
+# No pattern offset has a TR-6S differential capture. Kept so a later
+# promotion can fill this map without changing diff()'s row shape.
+VERIFIED_RAW_OFFSETS: dict[int, str] = {}
 
 SCALES = {"8T": 0, "16T": 1, "16": 2, "32": 3}
 SCALE_NAMES = {v: k for k, v in SCALES.items()}
@@ -58,9 +73,53 @@ class PatternError(ValueError):
     pass
 
 
+def candidate_field(offset: int) -> str | None:
+    """TR-8S label for one pattern byte, or None when the layout names nothing.
+
+    These labels are hypotheses for a differential capture. They are not
+    verified TR-6S fields.
+    """
+    if offset < 0 or offset >= SIZE:
+        return None
+    if offset < HEADER:
+        if offset < 16:
+            return "name"
+        if offset in (OFF_TEMPO, OFF_TEMPO + 1):
+            return "tempo"
+        if offset == OFF_KIT:
+            return "kit"
+        if offset == OFF_SCALE:
+            return "scale"
+        if offset == OFF_SHUFFLE:
+            return "shuffle"
+        if offset == OFF_VARIATION_MASK:
+            return "variation_mask"
+        return None
+    block, within = divmod(offset - HEADER, BLOCK)
+    if within < TRACK_BASE:
+        return None
+    track, along = divmod(within - TRACK_BASE, TRACK_STRIDE)
+    step, byte = divmod(along, STEP_STRIDE)
+    if step >= STEPS or track < 0:
+        return None
+    variation = VARIATIONS[block] if block < len(VARIATIONS) else f"block{block}"
+    if track < len(CANDIDATE_TR8S_TRACKS):
+        part = ("velocity", "byte1", "byte2", "byte3")[byte]
+        return f"{variation}_{CANDIDATE_TR8S_TRACKS[track]}_step{step:02d}_{part}"
+    motion = track - MOTION_TUNE_LANE_BASE
+    if 0 <= motion < len(CANDIDATE_TR8S_TRACKS):
+        part = ("tune", "decay", "ctrl", "mask")[byte]
+        return f"{variation}_{CANDIDATE_TR8S_TRACKS[motion]}_motion_step{step:02d}_{part}"
+    return None
+
+
+def _hex_bytes(values: list[int]) -> str:
+    return " ".join(f"{value:02X}" for value in values)
+
+
 @dataclass
 class Pattern:
-    """A TR-6S pattern blob with a verified common header."""
+    """A TR-6S pattern blob. Header reads are provisional TR-8S candidates."""
 
     raw: bytearray = field(repr=False)
 
@@ -255,3 +314,154 @@ class Pattern:
             "scale": self.scale,
             "variations_unmapped": True,
         }
+
+    def inspect(self) -> dict:
+        """Provisional header reads, with TR-8S step geometry left unverified.
+
+        `verified` stays empty until a TR-6S differential capture promotes a
+        field. Shuffle, steps, variations, and motion are not verified; their
+        inherited offsets are candidates only.
+        """
+        tempo_raw = struct.unpack_from("<H", self.raw, OFF_TEMPO)[0]
+        return {
+            "verified": {},
+            "candidates": {
+                "source": (
+                    "TR-8S pattern header and step geometry. No TR-6S "
+                    "differential capture has promoted these fields."
+                ),
+                "header": {
+                    "name": {
+                        "status": "candidate",
+                        "offset": 0,
+                        "length": 16,
+                        "value": self.name,
+                    },
+                    "tempo": {
+                        "status": "candidate",
+                        "offset": OFF_TEMPO,
+                        "length": 2,
+                        "raw": tempo_raw,
+                        "bpm": self.tempo,
+                    },
+                    "kit": {
+                        "status": "candidate",
+                        "offset": OFF_KIT,
+                        "length": 1,
+                        "raw": self.raw[OFF_KIT],
+                        "index": self.kit,
+                        "panel": self.raw[OFF_KIT],
+                    },
+                    "scale": {
+                        "status": "candidate",
+                        "offset": OFF_SCALE,
+                        "length": 1,
+                        "raw": self.raw[OFF_SCALE],
+                        "value": self.scale,
+                    },
+                },
+                "not_verified": {
+                    "shuffle": "not verified",
+                    "steps": "not verified",
+                    "variations": "not verified",
+                    "motion": "not verified",
+                    "shuffle_candidate": {
+                        "offset": OFF_SHUFFLE,
+                        "length": 1,
+                        "raw": self.raw[OFF_SHUFFLE],
+                        "tr8s_decoding": "offset-binary, 0x80 = 0",
+                    },
+                    "variation_mask_candidate": {
+                        "offset": OFF_VARIATION_MASK,
+                        "length": 1,
+                        "raw": self.raw[OFF_VARIATION_MASK],
+                        "tr8s_decoding": (
+                            "bitmask of variations A-H; the TR-8S recomputes "
+                            "it on write"
+                        ),
+                    },
+                    "step_geometry": {
+                        "status": "not verified",
+                        "inherited_from": "TR-8S",
+                        "header_bytes": HEADER,
+                        "block_bytes": BLOCK,
+                        "blocks": NBLOCKS,
+                        "variation_blocks": "A-H = blocks 0-7",
+                        "later_blocks": (
+                            "blocks 8-9 are unnamed here; TR-8S research calls "
+                            "them candidate fill-ins"
+                        ),
+                        "track_order": list(CANDIDATE_TR8S_TRACKS),
+                        "track_note": (
+                            "Labels use inherited TR-8S order, including MT, "
+                            "HT, RS, CC, and RC. Compact TR-6S order "
+                            "BD SD LT HC CH OH is not established in the blob. "
+                            "Track index 11, between the instruments and the "
+                            "motion lanes, has no candidate name."
+                        ),
+                        "step_stride": STEP_STRIDE,
+                        "steps": STEPS,
+                        "instrument_bytes": ["velocity", "byte1", "byte2", "byte3"],
+                        "motion_lane_base": MOTION_TUNE_LANE_BASE,
+                        "motion_bytes": ["tune", "decay", "ctrl", "mask"],
+                        "motion_note": (
+                            "Motion byte 1 is the TR-8S unidentified guess "
+                            "for decay, not a checked field."
+                        ),
+                    },
+                },
+            },
+        }
+
+    def diff(self, other: "Pattern") -> list[dict]:
+        """Changed ranges, labelled with verified or candidate fields.
+
+        Consecutive changed bytes that share a label become one range, in
+        offset order. A byte the layout does not name has both field names
+        null. `verified_field` is null for every current candidate.
+        """
+        ranges: list[dict] = []
+        current: dict | None = None
+        for offset, (before, after) in enumerate(zip(self.raw, other.raw)):
+            if before == after:
+                if current is not None:
+                    ranges.append(_finish_range(current))
+                    current = None
+                continue
+            verified = VERIFIED_RAW_OFFSETS.get(offset)
+            candidate = None if verified else candidate_field(offset)
+            if (current is not None and current["end"] == offset
+                    and current["verified_field"] == verified
+                    and current["candidate_field"] == candidate):
+                current["end"] = offset + 1
+                current["before"].append(before)
+                current["after"].append(after)
+                continue
+            if current is not None:
+                ranges.append(_finish_range(current))
+            current = {
+                "offset": offset,
+                "end": offset + 1,
+                "before": [before],
+                "after": [after],
+                "verified_field": verified,
+                "candidate_field": candidate,
+            }
+        if current is not None:
+            ranges.append(_finish_range(current))
+        return ranges
+
+
+def _finish_range(current: dict) -> dict:
+    before = current["before"]
+    after = current["after"]
+    return {
+        "offset": current["offset"],
+        "length": current["end"] - current["offset"],
+        "before": before,
+        "after": after,
+        "before_hex": _hex_bytes(before),
+        "after_hex": _hex_bytes(after),
+        "verified_field": current["verified_field"],
+        "candidate_field": current["candidate_field"],
+    }
