@@ -1,5 +1,105 @@
 # TR-6S Studio handoff — 2026-11-16
 
+## Progress — 2026-11-18 (live SysEx kit fields)
+
+- A nohup session on kit slot 0 mapped documented live SysEx DT1 addresses `10 00 <page> <param>` onto the 1,312-byte kit blob. No `TEMP_CURRENT_KIT` or pattern select was sent. Each formal probe changed one stored byte by one step, restored it, and required a whole-blob match. Session captures are in gitignored `backups/tr6s-session-20261118b/`. Final kit 0 matched the session baseline SHA-256 `9e3c179e057b3013cf4d7e6df22ded65e52a4bdb88cfa4a9b1b83ea67c91552a`.
+- Results: 116 of 118 recorded probes verified (78 per-track instrument fields, 6 Inst FX parameter-1 fields, 32 kit-common header fields). The two unverified records are documented below. Pattern header writes were skipped.
+- `kit.py` now exposes those verified offsets for `inspect-kit` / `diff-kit`. Bulk writers stay disabled. `pattern.py` is unchanged.
+
+### Encodings
+
+| Name | SysEx data bytes | Stored blob byte |
+|---|---|---|
+| `nibble2` | `[v // 16, v % 16]` for `v` in 0..255 | `v` (1 byte) |
+| `byte1` | `[v]` (0..127 in these probes) | `v` (1 byte) |
+| `fine` (delay fine tune) | nibble-encoded value in 1..201 | that value (1 byte; this kit stored 101) |
+| `coarse` (delay coarse tune) | nibble-encoded `0xC9 + step`, step 0..36 | `0xC9 + step` (1 byte; this kit stored 224 = step 23) |
+
+Two-byte 0–255 kit parameters use `nibble2`. One-byte enums and kit level use `byte1`.
+
+### SysEx address → kit-0 offset
+
+Instrument pages are `10`–`15` (BD, SD, LT, HC, CH, OH). Inst FX pages are `20`–`25`. Record base is `388 + 52*track`. Inst FX records start at `960 + 32*track` (the 1024-and-up tail is the 4th of eleven 32-byte slots, a TR-8S-sized leftover; bytes 960–1312 are 11×32).
+
+**Per-track instrument record** (`10 00 1N pp`, same delta on every track):
+
+| Param | Address | Offset | Width | Encoding |
+|---|---|---|---|---|
+| tune (already verified) | `1N 04` | base+2 | 1 | nibble2 (prior CC work) |
+| decay (already verified) | `1N 06` | base+3 | 1 | nibble2 (prior CC work) |
+| level (already verified) | `1N 08` | base+4 | 1 | nibble2 (prior CC work) |
+| gain | `1N 0A` | base+5 | 1 | nibble2 |
+| pan (already verified) | `1N 0C` | base+6 | 1 | nibble2 (prior work) |
+| reverb send (already verified) | `1N 0E` | base+7 | 1 | nibble2 (prior work) |
+| delay send (already verified) | `1N 10` | base+8 | 1 | nibble2 (prior work) |
+| LFO dest | `1N 13` | base+10 | 1 | byte1 |
+| LFO depth | `1N 14` | base+11 | 1 | nibble2 |
+| attack / FM depth | `1N 35` | base+28 | 1 | nibble2 |
+| param 0x37 | `1N 37` | base+29 | 1 | nibble2 |
+| FM decay | `1N 39` | base+30 | 1 | nibble2 |
+| feedback | `1N 3B` | base+31 | 1 | nibble2 |
+| param 0x3F | `1N 3F` | base+33 | 1 | nibble2 |
+| FM note | `1N 47` | base+37 | 1 | nibble2 |
+| pitch env | `1N 49` | base+38 | 1 | nibble2 |
+| pitch attack | `1N 4B` | base+39 | 1 | nibble2 |
+| pitch decay | `1N 4D` | base+40 | 1 | nibble2 |
+
+Absolute bases: BD 388, SD 440, LT 492, HC 544, CH 596, OH 648. Example: BD gain is 393, OH pitch decay is 688. Instrument gain is **not** +37; older comments that called +37 "gain" were wrong.
+
+**Inst FX** (`10 00 2N 09`, nibble2, width 1): parameter 1 is record+5, so BD 965, SD 997, LT 1029, HC 1061, CH 1093, OH 1125.
+
+**Kit-common header** (`10 00 pp qq`):
+
+| Field | Address | Offset | Encoding |
+|---|---|---|---|
+| kit level | `00 10` | 16 | byte1 |
+| colour BD..OH | `00 42`..`00 47` | 42..47 | byte1 |
+| reverb type | `01 00` | 68 | byte1 |
+| reverb time | `01 01` | 69 | nibble2 |
+| reverb level | `01 03` | 70 | nibble2 |
+| reverb predelay | `01 05` | 71 | byte1 |
+| reverb lo cut | `01 06` | 72 | byte1 |
+| reverb hi cut | `01 07` | 73 | byte1 |
+| reverb density | `01 08` | 74 | byte1 |
+| delay type | `02 00` | 108 | byte1 |
+| delay sync | `02 01` | 109 | byte1 |
+| delay level | `02 02` | 110 | nibble2 |
+| delay time | `02 04` | 111 | nibble2 |
+| delay feedback | `02 06` | 112 | nibble2 |
+| delay high damp | `02 09` | 114 | byte1 |
+| delay reverb send | `02 1C` | 128 | nibble2 |
+| delay coarse tune | `02 1E` | 129 | coarse (`0xC9+step`) |
+| delay fine tune | `02 20` | 130 | fine |
+| MFX switch | `03 01` | 161 | byte1 |
+| MFX control assign | `03 26` | 180 | byte1 |
+| MFX balance | `03 27` | 181 | nibble2 |
+| MFX rate | `03 29` | 182 | nibble2 |
+| MFX depth | `03 2B` | 183 | nibble2 |
+| MFX resonance | `03 2D` | 184 | nibble2 |
+| MFX manual | `03 2F` | 185 | nibble2 |
+| sidechain depth | `04 02` | 210 | nibble2 |
+| sidechain gain | `04 04` | 211 | nibble2 |
+| sidechain pan | `04 06` | 212 | nibble2 |
+| sidechain reverb send | `04 08` | 213 | nibble2 |
+| sidechain delay send | `04 0A` | 214 | nibble2 |
+| kit LFO waveform | `05 00` | 248 | byte1 |
+| kit LFO rate | `05 01` | 249 | nibble2 |
+| kit LFO sync | `05 03` | 250 | byte1 |
+
+Reverb time/level had already been confirmed by panel changes; this session confirmed them again via SysEx. Header colour bytes after OH (48+) were not probed.
+
+### Unverified / odd findings
+
+1. **BD Inst FX on/off** (`10 00 20 00`, `byte1`) is unverified. Writing 1 dumped a multi-byte "full report" across the BD Inst FX record (offset 960 and following bytes) instead of a single switch byte. Restoring the switch alone left leftovers; a later targeted restore (`20 00 = [0]`, then odd params `20 17`…`20 2B`) returned kit 0 to the session baseline. The switch was not re-probed and is not promoted.
+2. **Kit delay coarse tune** first attempt is recorded as unverified because the session script treated the stored byte 224 as the *step*, wrote `0xC9+36 = 237`, and could not restore (encode(coarse, 224) clamps to step 36). A nibble-encoded write of 224 restored the kit. A corrected retry then verified offset 129: 224 → 223 → 224 (`0xC9+23`). The offset and encoding are promoted from that retry; the aborted record remains in `results.json` under `kit delay coarse tune (aborted bad encoding)`.
+
+Other notes: Inst FX switch docs called it a 1-byte field that "always sends a full report". Param `1@ 3D` (would be record +32) was not in the job list. Display-value mappings (signed tune, labelled typenames, cents, etc.) are still unverified.
+
+### Pattern header
+
+RQ1 of `01 00 00 01` (TEMP_CURRENT_PATTERN), `01 00 00 02` (TEMP_NEXT_PATTERN), and `01 00 00 39` (General Tempo) returned no reply, matching `transport.py` / `PROTOCOL.md`: those TEMP addresses are write-only and would select a pattern if written. No current-pattern field was found without a select, so no pattern-header DT1 was sent and `pattern.py` is unchanged. Skip data was not touched.
+
+
 ## Progress — 2026-11-18
 
 - Read-only `inspect-pattern` and `diff-pattern` are in. They mirror kit inspection for a 24,504-byte blob, including `inspect-pattern --file`. No pattern field is verified: name, tempo, kit, and scale are TR-8S header candidates. Shuffle, steps, variations, and motion stay `not verified`, and their inherited offsets are candidate diff labels only. Promoting any of them still needs a differential panel capture.
@@ -146,6 +246,6 @@ A 2026-11-18 pre-select dump of kit 1 differed from the 16th only in those four 
 4. Hardware-blocked. Ask for one reversible panel change, such as toggling one known BD step in variation A. Capture after, run `diff-pattern`, then ask for the same step to be toggled back and confirm the entire blob matches baseline. A second track near the end (OH) can distinguish compact TR-6S step order from retained TR-8S positions: a compact OH hit will not carry the candidate label `A_OH_step00_velocity`. Keep changes one at a time and record the exact selected variation and step number.
 5. Hardware-blocked. Map header items (tempo, kit reference, scale, shuffle), variation blocks, steps, and motion only as evidence supports them. Promote a field from candidate to verified in code and docs after a clean differential capture. Leave writers blocked until a sufficiently complete map, backups, and an explicit safe write test plan exist. Upstream observed that even an uncommitted bulk send can alter a stored slot immediately.
 
-If returning to kit work instead, the remaining high-value candidate checks are tone selection, LFO, and instrument gain (base+5, SysEx `0x0A`, confirmed only by an undone probe). Tune, decay, level, pan, and both sends are verified on all six tracks. CTRL remains assignment-dependent. The standard live parameter SysEx map in the companion docs gives addresses and nibble-encoded values, **not positions in the opaque bulk kit blob**, though several of those addresses have now been paired with compact-record offsets via differential bulk reads. Individual parameter RQ1 probes gave no reply in one attempt; use bulk differential reads as the established method.
+Kit work from the 2026-11-18 SysEx session (gain, LFO dest/depth, the mapped instrument/Inst FX parameter bytes, and kit-common header fields) is now in `kit.py`. Remaining high-value kit candidates are tone selection, Inst FX on/off (unsafe to poke without a restore plan), and any still-unmapped header or record gaps. CTRL remains assignment-dependent. Individual parameter RQ1 probes gave no reply; use bulk differential reads as the established method. Pattern header mapping still needs a way to identify the current slot without sending a select.
 
 For further E16 CC checks: send to the E16 **input** (on 2026-11-18, `24:0`; confirm with `aconnect -i`). Do not treat a previous `28:0` as that input. Set the script kit_number with Note On channel 11. Save a fresh kit slot 1 baseline, choose one mapped CC, send a nearby value, read and diff, then restore. If the stored byte is off the 7-bit CC grid, restore the exact byte with the live-parameter SysEx DT1 rather than aborting. Stop on an unexpected multi-byte diff or a failed exact restore.

@@ -1,11 +1,11 @@
 """Offline coverage for TR-6S kit inspection, kit diffs, and their CLI commands.
 
 Synthetic 1,312-byte blobs stand in for hardware captures. Verified offsets are
-the hardware-checked raw bytes (reverb time/level, six tune positions,
-decay and level on every track, and pan/reverb send/delay send on every
-track). Candidate labels are
-the TR-8S field layout applied to those compact records. diff() leaves
-candidate_field empty when the changed offset is already verified.
+the hardware-checked raw bytes (kit-common header fields, six tune positions,
+and the compact-record / Inst FX bytes listed in EXPECTED_VERIFIED). Candidate
+labels are the remaining TR-8S field layout applied to those compact records
+(currently the two-byte tone id). diff() leaves candidate_field empty when the
+changed offset is already verified.
 """
 
 import json
@@ -60,6 +60,120 @@ EXPECTED_VERIFIED = {
     654: "OH_pan_raw",
     655: "OH_reverb_send_raw",
     656: "OH_delay_send_raw",
+    16: "kit_level_raw",
+    42: "BD_color_raw",
+    43: "SD_color_raw",
+    44: "LT_color_raw",
+    45: "HC_color_raw",
+    46: "CH_color_raw",
+    47: "OH_color_raw",
+    68: "reverb_type_raw",
+    71: "reverb_predelay_raw",
+    72: "reverb_lo_cut_raw",
+    73: "reverb_hi_cut_raw",
+    74: "reverb_density_raw",
+    108: "delay_type_raw",
+    109: "delay_sync_raw",
+    110: "delay_level_raw",
+    111: "delay_time_raw",
+    112: "delay_feedback_raw",
+    114: "delay_h_damp_raw",
+    128: "delay_reverb_send_raw",
+    129: "delay_coarse_tune_raw",
+    130: "delay_fine_tune_raw",
+    161: "mfx_switch_raw",
+    180: "mfx_control_assign_raw",
+    181: "mfx_balance_raw",
+    182: "mfx_rate_raw",
+    183: "mfx_depth_raw",
+    184: "mfx_resonance_raw",
+    185: "mfx_manual_raw",
+    210: "sidechain_depth_raw",
+    211: "sidechain_gain_raw",
+    212: "sidechain_pan_raw",
+    213: "sidechain_reverb_send_raw",
+    214: "sidechain_delay_send_raw",
+    248: "kit_lfo_waveform_raw",
+    249: "kit_lfo_rate_raw",
+    250: "kit_lfo_sync_raw",
+    393: "BD_gain_raw",
+    398: "BD_lfo_dest_raw",
+    399: "BD_lfo_depth_raw",
+    416: "BD_attack_or_fm_depth_raw",
+    417: "BD_param_37_raw",
+    418: "BD_fm_decay_raw",
+    419: "BD_feedback_raw",
+    421: "BD_param_3f_raw",
+    425: "BD_fm_note_raw",
+    426: "BD_pitch_env_raw",
+    427: "BD_pitch_attack_raw",
+    428: "BD_pitch_decay_raw",
+    965: "BD_inst_fx_param1_raw",
+    445: "SD_gain_raw",
+    450: "SD_lfo_dest_raw",
+    451: "SD_lfo_depth_raw",
+    468: "SD_attack_or_fm_depth_raw",
+    469: "SD_param_37_raw",
+    470: "SD_fm_decay_raw",
+    471: "SD_feedback_raw",
+    473: "SD_param_3f_raw",
+    477: "SD_fm_note_raw",
+    478: "SD_pitch_env_raw",
+    479: "SD_pitch_attack_raw",
+    480: "SD_pitch_decay_raw",
+    997: "SD_inst_fx_param1_raw",
+    497: "LT_gain_raw",
+    502: "LT_lfo_dest_raw",
+    503: "LT_lfo_depth_raw",
+    520: "LT_attack_or_fm_depth_raw",
+    521: "LT_param_37_raw",
+    522: "LT_fm_decay_raw",
+    523: "LT_feedback_raw",
+    525: "LT_param_3f_raw",
+    529: "LT_fm_note_raw",
+    530: "LT_pitch_env_raw",
+    531: "LT_pitch_attack_raw",
+    532: "LT_pitch_decay_raw",
+    1029: "LT_inst_fx_param1_raw",
+    549: "HC_gain_raw",
+    554: "HC_lfo_dest_raw",
+    555: "HC_lfo_depth_raw",
+    572: "HC_attack_or_fm_depth_raw",
+    573: "HC_param_37_raw",
+    574: "HC_fm_decay_raw",
+    575: "HC_feedback_raw",
+    577: "HC_param_3f_raw",
+    581: "HC_fm_note_raw",
+    582: "HC_pitch_env_raw",
+    583: "HC_pitch_attack_raw",
+    584: "HC_pitch_decay_raw",
+    1061: "HC_inst_fx_param1_raw",
+    601: "CH_gain_raw",
+    606: "CH_lfo_dest_raw",
+    607: "CH_lfo_depth_raw",
+    624: "CH_attack_or_fm_depth_raw",
+    625: "CH_param_37_raw",
+    626: "CH_fm_decay_raw",
+    627: "CH_feedback_raw",
+    629: "CH_param_3f_raw",
+    633: "CH_fm_note_raw",
+    634: "CH_pitch_env_raw",
+    635: "CH_pitch_attack_raw",
+    636: "CH_pitch_decay_raw",
+    1093: "CH_inst_fx_param1_raw",
+    653: "OH_gain_raw",
+    658: "OH_lfo_dest_raw",
+    659: "OH_lfo_depth_raw",
+    676: "OH_attack_or_fm_depth_raw",
+    677: "OH_param_37_raw",
+    678: "OH_fm_decay_raw",
+    679: "OH_feedback_raw",
+    681: "OH_param_3f_raw",
+    685: "OH_fm_note_raw",
+    686: "OH_pitch_env_raw",
+    687: "OH_pitch_attack_raw",
+    688: "OH_pitch_decay_raw",
+    1125: "OH_inst_fx_param1_raw",
 }
 
 # inspect() paths that move when only that verified byte is incremented.
@@ -213,6 +327,354 @@ INSPECT_PATHS = {
         ("verified", "oh_delay_send_raw"),
         ("candidates", "tracks", "OH", "delay_send_raw_verified"),
     ),
+    16: (("verified", "kit_level_raw"),),
+    68: (("verified", "reverb_type_raw"),),
+    71: (("verified", "reverb_predelay_raw"),),
+    72: (("verified", "reverb_lo_cut_raw"),),
+    73: (("verified", "reverb_hi_cut_raw"),),
+    74: (("verified", "reverb_density_raw"),),
+    108: (("verified", "delay_type_raw"),),
+    109: (("verified", "delay_sync_raw"),),
+    110: (("verified", "delay_level_raw"),),
+    111: (("verified", "delay_time_raw"),),
+    112: (("verified", "delay_feedback_raw"),),
+    114: (("verified", "delay_h_damp_raw"),),
+    128: (("verified", "delay_reverb_send_raw"),),
+    129: (("verified", "delay_coarse_tune_raw"),),
+    130: (("verified", "delay_fine_tune_raw"),),
+    161: (("verified", "mfx_switch_raw"),),
+    180: (("verified", "mfx_control_assign_raw"),),
+    181: (("verified", "mfx_balance_raw"),),
+    182: (("verified", "mfx_rate_raw"),),
+    183: (("verified", "mfx_depth_raw"),),
+    184: (("verified", "mfx_resonance_raw"),),
+    185: (("verified", "mfx_manual_raw"),),
+    210: (("verified", "sidechain_depth_raw"),),
+    211: (("verified", "sidechain_gain_raw"),),
+    212: (("verified", "sidechain_pan_raw"),),
+    213: (("verified", "sidechain_reverb_send_raw"),),
+    214: (("verified", "sidechain_delay_send_raw"),),
+    248: (("verified", "kit_lfo_waveform_raw"),),
+    249: (("verified", "kit_lfo_rate_raw"),),
+    250: (("verified", "kit_lfo_sync_raw"),),
+    42: (("verified", "color_raw_by_track", "BD"),),
+    43: (("verified", "color_raw_by_track", "SD"),),
+    44: (("verified", "color_raw_by_track", "LT"),),
+    45: (("verified", "color_raw_by_track", "HC"),),
+    46: (("verified", "color_raw_by_track", "CH"),),
+    47: (("verified", "color_raw_by_track", "OH"),),
+    393: (
+        ("verified", "gain_raw_by_track", "BD"),
+        ("candidates", "tracks", "BD", "gain_raw_verified"),
+    ),
+    398: (
+        ("verified", "lfo_dest_raw_by_track", "BD"),
+        ("candidates", "tracks", "BD", "lfo_dest_raw_verified"),
+    ),
+    399: (
+        ("verified", "lfo_depth_raw_by_track", "BD"),
+        ("candidates", "tracks", "BD", "lfo_depth_raw_verified"),
+    ),
+    416: (
+        ("verified", "attack_or_fm_depth_raw_by_track", "BD"),
+        ("candidates", "tracks", "BD", "attack_or_fm_depth_raw_verified"),
+    ),
+    417: (
+        ("verified", "param_37_raw_by_track", "BD"),
+        ("candidates", "tracks", "BD", "param_37_raw_verified"),
+    ),
+    418: (
+        ("verified", "fm_decay_raw_by_track", "BD"),
+        ("candidates", "tracks", "BD", "fm_decay_raw_verified"),
+    ),
+    419: (
+        ("verified", "feedback_raw_by_track", "BD"),
+        ("candidates", "tracks", "BD", "feedback_raw_verified"),
+    ),
+    421: (
+        ("verified", "param_3f_raw_by_track", "BD"),
+        ("candidates", "tracks", "BD", "param_3f_raw_verified"),
+    ),
+    425: (
+        ("verified", "fm_note_raw_by_track", "BD"),
+        ("candidates", "tracks", "BD", "fm_note_raw_verified"),
+    ),
+    426: (
+        ("verified", "pitch_env_raw_by_track", "BD"),
+        ("candidates", "tracks", "BD", "pitch_env_raw_verified"),
+    ),
+    427: (
+        ("verified", "pitch_attack_raw_by_track", "BD"),
+        ("candidates", "tracks", "BD", "pitch_attack_raw_verified"),
+    ),
+    428: (
+        ("verified", "pitch_decay_raw_by_track", "BD"),
+        ("candidates", "tracks", "BD", "pitch_decay_raw_verified"),
+    ),
+    965: (
+        ("verified", "inst_fx_param1_raw_by_track", "BD"),
+        ("candidates", "tracks", "BD", "inst_fx_param1_raw_verified"),
+    ),
+    445: (
+        ("verified", "gain_raw_by_track", "SD"),
+        ("candidates", "tracks", "SD", "gain_raw_verified"),
+    ),
+    450: (
+        ("verified", "lfo_dest_raw_by_track", "SD"),
+        ("candidates", "tracks", "SD", "lfo_dest_raw_verified"),
+    ),
+    451: (
+        ("verified", "lfo_depth_raw_by_track", "SD"),
+        ("candidates", "tracks", "SD", "lfo_depth_raw_verified"),
+    ),
+    468: (
+        ("verified", "attack_or_fm_depth_raw_by_track", "SD"),
+        ("candidates", "tracks", "SD", "attack_or_fm_depth_raw_verified"),
+    ),
+    469: (
+        ("verified", "param_37_raw_by_track", "SD"),
+        ("candidates", "tracks", "SD", "param_37_raw_verified"),
+    ),
+    470: (
+        ("verified", "fm_decay_raw_by_track", "SD"),
+        ("candidates", "tracks", "SD", "fm_decay_raw_verified"),
+    ),
+    471: (
+        ("verified", "feedback_raw_by_track", "SD"),
+        ("candidates", "tracks", "SD", "feedback_raw_verified"),
+    ),
+    473: (
+        ("verified", "param_3f_raw_by_track", "SD"),
+        ("candidates", "tracks", "SD", "param_3f_raw_verified"),
+    ),
+    477: (
+        ("verified", "fm_note_raw_by_track", "SD"),
+        ("candidates", "tracks", "SD", "fm_note_raw_verified"),
+    ),
+    478: (
+        ("verified", "pitch_env_raw_by_track", "SD"),
+        ("candidates", "tracks", "SD", "pitch_env_raw_verified"),
+    ),
+    479: (
+        ("verified", "pitch_attack_raw_by_track", "SD"),
+        ("candidates", "tracks", "SD", "pitch_attack_raw_verified"),
+    ),
+    480: (
+        ("verified", "pitch_decay_raw_by_track", "SD"),
+        ("candidates", "tracks", "SD", "pitch_decay_raw_verified"),
+    ),
+    997: (
+        ("verified", "inst_fx_param1_raw_by_track", "SD"),
+        ("candidates", "tracks", "SD", "inst_fx_param1_raw_verified"),
+    ),
+    497: (
+        ("verified", "gain_raw_by_track", "LT"),
+        ("candidates", "tracks", "LT", "gain_raw_verified"),
+    ),
+    502: (
+        ("verified", "lfo_dest_raw_by_track", "LT"),
+        ("candidates", "tracks", "LT", "lfo_dest_raw_verified"),
+    ),
+    503: (
+        ("verified", "lfo_depth_raw_by_track", "LT"),
+        ("candidates", "tracks", "LT", "lfo_depth_raw_verified"),
+    ),
+    520: (
+        ("verified", "attack_or_fm_depth_raw_by_track", "LT"),
+        ("candidates", "tracks", "LT", "attack_or_fm_depth_raw_verified"),
+    ),
+    521: (
+        ("verified", "param_37_raw_by_track", "LT"),
+        ("candidates", "tracks", "LT", "param_37_raw_verified"),
+    ),
+    522: (
+        ("verified", "fm_decay_raw_by_track", "LT"),
+        ("candidates", "tracks", "LT", "fm_decay_raw_verified"),
+    ),
+    523: (
+        ("verified", "feedback_raw_by_track", "LT"),
+        ("candidates", "tracks", "LT", "feedback_raw_verified"),
+    ),
+    525: (
+        ("verified", "param_3f_raw_by_track", "LT"),
+        ("candidates", "tracks", "LT", "param_3f_raw_verified"),
+    ),
+    529: (
+        ("verified", "fm_note_raw_by_track", "LT"),
+        ("candidates", "tracks", "LT", "fm_note_raw_verified"),
+    ),
+    530: (
+        ("verified", "pitch_env_raw_by_track", "LT"),
+        ("candidates", "tracks", "LT", "pitch_env_raw_verified"),
+    ),
+    531: (
+        ("verified", "pitch_attack_raw_by_track", "LT"),
+        ("candidates", "tracks", "LT", "pitch_attack_raw_verified"),
+    ),
+    532: (
+        ("verified", "pitch_decay_raw_by_track", "LT"),
+        ("candidates", "tracks", "LT", "pitch_decay_raw_verified"),
+    ),
+    1029: (
+        ("verified", "inst_fx_param1_raw_by_track", "LT"),
+        ("candidates", "tracks", "LT", "inst_fx_param1_raw_verified"),
+    ),
+    549: (
+        ("verified", "gain_raw_by_track", "HC"),
+        ("candidates", "tracks", "HC", "gain_raw_verified"),
+    ),
+    554: (
+        ("verified", "lfo_dest_raw_by_track", "HC"),
+        ("candidates", "tracks", "HC", "lfo_dest_raw_verified"),
+    ),
+    555: (
+        ("verified", "lfo_depth_raw_by_track", "HC"),
+        ("candidates", "tracks", "HC", "lfo_depth_raw_verified"),
+    ),
+    572: (
+        ("verified", "attack_or_fm_depth_raw_by_track", "HC"),
+        ("candidates", "tracks", "HC", "attack_or_fm_depth_raw_verified"),
+    ),
+    573: (
+        ("verified", "param_37_raw_by_track", "HC"),
+        ("candidates", "tracks", "HC", "param_37_raw_verified"),
+    ),
+    574: (
+        ("verified", "fm_decay_raw_by_track", "HC"),
+        ("candidates", "tracks", "HC", "fm_decay_raw_verified"),
+    ),
+    575: (
+        ("verified", "feedback_raw_by_track", "HC"),
+        ("candidates", "tracks", "HC", "feedback_raw_verified"),
+    ),
+    577: (
+        ("verified", "param_3f_raw_by_track", "HC"),
+        ("candidates", "tracks", "HC", "param_3f_raw_verified"),
+    ),
+    581: (
+        ("verified", "fm_note_raw_by_track", "HC"),
+        ("candidates", "tracks", "HC", "fm_note_raw_verified"),
+    ),
+    582: (
+        ("verified", "pitch_env_raw_by_track", "HC"),
+        ("candidates", "tracks", "HC", "pitch_env_raw_verified"),
+    ),
+    583: (
+        ("verified", "pitch_attack_raw_by_track", "HC"),
+        ("candidates", "tracks", "HC", "pitch_attack_raw_verified"),
+    ),
+    584: (
+        ("verified", "pitch_decay_raw_by_track", "HC"),
+        ("candidates", "tracks", "HC", "pitch_decay_raw_verified"),
+    ),
+    1061: (
+        ("verified", "inst_fx_param1_raw_by_track", "HC"),
+        ("candidates", "tracks", "HC", "inst_fx_param1_raw_verified"),
+    ),
+    601: (
+        ("verified", "gain_raw_by_track", "CH"),
+        ("candidates", "tracks", "CH", "gain_raw_verified"),
+    ),
+    606: (
+        ("verified", "lfo_dest_raw_by_track", "CH"),
+        ("candidates", "tracks", "CH", "lfo_dest_raw_verified"),
+    ),
+    607: (
+        ("verified", "lfo_depth_raw_by_track", "CH"),
+        ("candidates", "tracks", "CH", "lfo_depth_raw_verified"),
+    ),
+    624: (
+        ("verified", "attack_or_fm_depth_raw_by_track", "CH"),
+        ("candidates", "tracks", "CH", "attack_or_fm_depth_raw_verified"),
+    ),
+    625: (
+        ("verified", "param_37_raw_by_track", "CH"),
+        ("candidates", "tracks", "CH", "param_37_raw_verified"),
+    ),
+    626: (
+        ("verified", "fm_decay_raw_by_track", "CH"),
+        ("candidates", "tracks", "CH", "fm_decay_raw_verified"),
+    ),
+    627: (
+        ("verified", "feedback_raw_by_track", "CH"),
+        ("candidates", "tracks", "CH", "feedback_raw_verified"),
+    ),
+    629: (
+        ("verified", "param_3f_raw_by_track", "CH"),
+        ("candidates", "tracks", "CH", "param_3f_raw_verified"),
+    ),
+    633: (
+        ("verified", "fm_note_raw_by_track", "CH"),
+        ("candidates", "tracks", "CH", "fm_note_raw_verified"),
+    ),
+    634: (
+        ("verified", "pitch_env_raw_by_track", "CH"),
+        ("candidates", "tracks", "CH", "pitch_env_raw_verified"),
+    ),
+    635: (
+        ("verified", "pitch_attack_raw_by_track", "CH"),
+        ("candidates", "tracks", "CH", "pitch_attack_raw_verified"),
+    ),
+    636: (
+        ("verified", "pitch_decay_raw_by_track", "CH"),
+        ("candidates", "tracks", "CH", "pitch_decay_raw_verified"),
+    ),
+    1093: (
+        ("verified", "inst_fx_param1_raw_by_track", "CH"),
+        ("candidates", "tracks", "CH", "inst_fx_param1_raw_verified"),
+    ),
+    653: (
+        ("verified", "gain_raw_by_track", "OH"),
+        ("candidates", "tracks", "OH", "gain_raw_verified"),
+    ),
+    658: (
+        ("verified", "lfo_dest_raw_by_track", "OH"),
+        ("candidates", "tracks", "OH", "lfo_dest_raw_verified"),
+    ),
+    659: (
+        ("verified", "lfo_depth_raw_by_track", "OH"),
+        ("candidates", "tracks", "OH", "lfo_depth_raw_verified"),
+    ),
+    676: (
+        ("verified", "attack_or_fm_depth_raw_by_track", "OH"),
+        ("candidates", "tracks", "OH", "attack_or_fm_depth_raw_verified"),
+    ),
+    677: (
+        ("verified", "param_37_raw_by_track", "OH"),
+        ("candidates", "tracks", "OH", "param_37_raw_verified"),
+    ),
+    678: (
+        ("verified", "fm_decay_raw_by_track", "OH"),
+        ("candidates", "tracks", "OH", "fm_decay_raw_verified"),
+    ),
+    679: (
+        ("verified", "feedback_raw_by_track", "OH"),
+        ("candidates", "tracks", "OH", "feedback_raw_verified"),
+    ),
+    681: (
+        ("verified", "param_3f_raw_by_track", "OH"),
+        ("candidates", "tracks", "OH", "param_3f_raw_verified"),
+    ),
+    685: (
+        ("verified", "fm_note_raw_by_track", "OH"),
+        ("candidates", "tracks", "OH", "fm_note_raw_verified"),
+    ),
+    686: (
+        ("verified", "pitch_env_raw_by_track", "OH"),
+        ("candidates", "tracks", "OH", "pitch_env_raw_verified"),
+    ),
+    687: (
+        ("verified", "pitch_attack_raw_by_track", "OH"),
+        ("candidates", "tracks", "OH", "pitch_attack_raw_verified"),
+    ),
+    688: (
+        ("verified", "pitch_decay_raw_by_track", "OH"),
+        ("candidates", "tracks", "OH", "pitch_decay_raw_verified"),
+    ),
+    1125: (
+        ("verified", "inst_fx_param1_raw_by_track", "OH"),
+        ("candidates", "tracks", "OH", "inst_fx_param1_raw_verified"),
+    ),
 }
 
 # Relative field bytes inside each 52-byte record. Tune is +2 and is not a
@@ -284,18 +746,28 @@ def kit_blob() -> bytes:
 
 def expected_report() -> dict:
     def record(base, tone, tune, decay, level, pan, reverb, delay, lfo, *, verified=()):
-        def label(name, field):
-            return f"{name}_{'verified' if field in verified else 'candidate'}"
         return {
             "record_offset": base,
             "tone_id_candidate": tone,
             "tune_raw_verified": tune,
             "decay_raw_verified": decay,
             "level_raw_verified": level,
-            "lfo_raw_candidate": lfo,
-            label("pan_raw", "pan"): pan,
-            label("reverb_send_raw", "reverb_send"): reverb,
-            label("delay_send_raw", "delay_send"): delay,
+            "gain_raw_verified": 0,
+            "lfo_dest_raw_verified": 0,
+            "lfo_depth_raw_verified": lfo,
+            "attack_or_fm_depth_raw_verified": 0,
+            "param_37_raw_verified": 0,
+            "fm_decay_raw_verified": 0,
+            "feedback_raw_verified": 0,
+            "param_3f_raw_verified": 0,
+            "fm_note_raw_verified": 0,
+            "pitch_env_raw_verified": 0,
+            "pitch_attack_raw_verified": 0,
+            "pitch_decay_raw_verified": 0,
+            "inst_fx_param1_raw_verified": 0,
+            "pan_raw_verified": pan,
+            "reverb_send_raw_verified": reverb,
+            "delay_send_raw_verified": delay,
         }
 
     return {
@@ -333,6 +805,36 @@ def expected_report() -> dict:
             "oh_pan_raw": 0x55,
             "oh_reverb_send_raw": 0x65,
             "oh_delay_send_raw": 0x75,
+            "kit_level_raw": 0,
+            "reverb_type_raw": 0,
+            "reverb_predelay_raw": 0,
+            "reverb_lo_cut_raw": 0,
+            "reverb_hi_cut_raw": 0,
+            "reverb_density_raw": 0,
+            "delay_type_raw": 0,
+            "delay_sync_raw": 0,
+            "delay_level_raw": 0,
+            "delay_time_raw": 0,
+            "delay_feedback_raw": 0,
+            "delay_h_damp_raw": 0,
+            "delay_reverb_send_raw": 0,
+            "delay_coarse_tune_raw": 0,
+            "delay_fine_tune_raw": 0,
+            "mfx_switch_raw": 0,
+            "mfx_control_assign_raw": 0,
+            "mfx_balance_raw": 0,
+            "mfx_rate_raw": 0,
+            "mfx_depth_raw": 0,
+            "mfx_resonance_raw": 0,
+            "mfx_manual_raw": 0,
+            "sidechain_depth_raw": 0,
+            "sidechain_gain_raw": 0,
+            "sidechain_pan_raw": 0,
+            "sidechain_reverb_send_raw": 0,
+            "sidechain_delay_send_raw": 0,
+            "kit_lfo_waveform_raw": 0,
+            "kit_lfo_rate_raw": 0,
+            "kit_lfo_sync_raw": 0,
             "tune_raw_by_track": {
                 "BD": 0x7C,
                 "SD": 0x80,
@@ -341,6 +843,20 @@ def expected_report() -> dict:
                 "CH": 0x7B,
                 "OH": 0x80,
             },
+            "gain_raw_by_track": {"BD": 0, "SD": 0, "LT": 0, "HC": 0, "CH": 0, "OH": 0},
+            "lfo_dest_raw_by_track": {"BD": 0, "SD": 0, "LT": 0, "HC": 0, "CH": 0, "OH": 0},
+            "lfo_depth_raw_by_track": {"BD": 0x03, "SD": 0x06, "LT": 0x07, "HC": 0x08, "CH": 0x09, "OH": 0x0A},
+            "attack_or_fm_depth_raw_by_track": {"BD": 0, "SD": 0, "LT": 0, "HC": 0, "CH": 0, "OH": 0},
+            "param_37_raw_by_track": {"BD": 0, "SD": 0, "LT": 0, "HC": 0, "CH": 0, "OH": 0},
+            "fm_decay_raw_by_track": {"BD": 0, "SD": 0, "LT": 0, "HC": 0, "CH": 0, "OH": 0},
+            "feedback_raw_by_track": {"BD": 0, "SD": 0, "LT": 0, "HC": 0, "CH": 0, "OH": 0},
+            "param_3f_raw_by_track": {"BD": 0, "SD": 0, "LT": 0, "HC": 0, "CH": 0, "OH": 0},
+            "fm_note_raw_by_track": {"BD": 0, "SD": 0, "LT": 0, "HC": 0, "CH": 0, "OH": 0},
+            "pitch_env_raw_by_track": {"BD": 0, "SD": 0, "LT": 0, "HC": 0, "CH": 0, "OH": 0},
+            "pitch_attack_raw_by_track": {"BD": 0, "SD": 0, "LT": 0, "HC": 0, "CH": 0, "OH": 0},
+            "pitch_decay_raw_by_track": {"BD": 0, "SD": 0, "LT": 0, "HC": 0, "CH": 0, "OH": 0},
+            "inst_fx_param1_raw_by_track": {"BD": 0, "SD": 0, "LT": 0, "HC": 0, "CH": 0, "OH": 0},
+            "color_raw_by_track": {"BD": 0, "SD": 0, "LT": 0, "HC": 0, "CH": 0, "OH": 0},
         },
         "candidates": {
             "source": "TR-8S bulk field offsets in confirmed compact TR-6S records",
@@ -425,7 +941,10 @@ class KitInspectTests(unittest.TestCase):
             self.assertIn("tone_id_candidate", record)
             self.assertIn("decay_raw_verified", record)
             self.assertIn("level_raw_verified", record)
-            self.assertIn("lfo_raw_candidate", record)
+            self.assertIn("lfo_depth_raw_verified", record)
+            self.assertIn("lfo_dest_raw_verified", record)
+            self.assertIn("gain_raw_verified", record)
+            self.assertNotIn("lfo_raw_candidate", record)
             self.assertNotIn("tune_raw_candidate", record)
             self.assertNotIn("decay_raw_candidate", record)
             self.assertNotIn("level_raw_candidate", record)
@@ -483,9 +1002,9 @@ class KitInspectTests(unittest.TestCase):
                         self.assertEqual(dig(after, path) & 0xFF, dig(before, path) & 0xFF)
                     else:
                         self.assertEqual(dig(after, path), updated)
-        # Six tracks, eight listed slots, minus decay, level, and
-        # pan/reverb/delay on every track (6*5 = 30).
-        self.assertEqual(seen, 6 * len(CANDIDATE_FIELDS) - 30)
+        # Six tracks, eight listed slots, minus decay, level,
+        # pan/reverb/delay, and LFO depth on every track (6*6 = 36).
+        self.assertEqual(seen, 6 * len(CANDIDATE_FIELDS) - 36)
 
     def test_diff_leaves_unmapped_bytes_unlabelled(self):
         blob = kit_blob()
@@ -503,9 +1022,9 @@ class KitInspectTests(unittest.TestCase):
             "candidate_field": None,
         }])
 
-        # 71 sits just after reverb level. 393 is the unmapped gap between BD
-        # level and BD pan. 1311 is the last byte of the blob.
-        for offset in (71, 393, 1311):
+        # 75 sits just after verified reverb density. 397 is the unmapped gap
+        # between BD delay send (+8) and LFO dest (+10). 1311 is the last byte.
+        for offset in (75, 397, 1311):
             with self.subTest(offset=offset):
                 changed, updated = flip(blob, offset)
                 self.assertEqual(changed.inspect(), before)
@@ -521,14 +1040,14 @@ class KitInspectTests(unittest.TestCase):
         original = kit_blob()
         mutated = bytearray(original)
         # Apply out of address order; the diff follows offsets, not edit order.
-        for offset in (650, 71, 443):
+        for offset in (650, 75, 443):
             mutated[offset] = (mutated[offset] + 1) & 0xFF
         rows = Kit.from_bytes(original).diff(Kit.from_bytes(mutated))
         self.assertEqual(rows, [
             {
-                "offset": 71,
-                "before": original[71],
-                "after": mutated[71],
+                "offset": 75,
+                "before": original[75],
+                "after": mutated[75],
                 "verified_field": None,
                 "candidate_field": None,
             },
@@ -603,7 +1122,7 @@ class KitInspectCliTests(unittest.TestCase):
         after_blob = bytearray(before_blob)
         after_blob[69] = (after_blob[69] + 1) & 0xFF    # verified reverb time
         after_blob[443] = (after_blob[443] + 1) & 0xFF  # verified SD decay
-        after_blob[71] = (after_blob[71] + 1) & 0xFF    # unmapped
+        after_blob[75] = (after_blob[75] + 1) & 0xFF    # unmapped
         after_blob = bytes(after_blob)
         library = Kit.from_bytes(before_blob).diff(Kit.from_bytes(after_blob))
         with tempfile.TemporaryDirectory() as directory:
@@ -624,8 +1143,8 @@ class KitInspectCliTests(unittest.TestCase):
         self.assertIsNone(by_offset[69]["candidate_field"])
         self.assertEqual(by_offset[443]["verified_field"], "SD_decay_raw")
         self.assertIsNone(by_offset[443]["candidate_field"])
-        self.assertIsNone(by_offset[71]["verified_field"])
-        self.assertIsNone(by_offset[71]["candidate_field"])
+        self.assertIsNone(by_offset[75]["verified_field"])
+        self.assertIsNone(by_offset[75]["candidate_field"])
 
     def test_diff_kit_identical_files_report_no_changes(self):
         blob = kit_blob()

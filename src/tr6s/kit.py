@@ -1,15 +1,26 @@
 """
-Layer 2 — TR-6S kit blob. The name, raw reverb offsets, all six tune
-positions, decay and level on every track, and pan / reverb send /
-delay send on every track have been checked on hardware.
-Other field offsets below
-are TR-8S research and remain disabled until differential captures confirm them.
+Layer 2 — TR-6S kit blob. The name, kit-common header fields listed in
+VERIFIED_RAW_OFFSETS, all six tune positions, decay, level, gain, pan,
+reverb send, delay send, LFO dest/depth, and the SysEx-mapped instrument
+and Inst FX parameter bytes on every track have been checked on hardware.
+Other field offsets below are TR-8S research and remain disabled until
+differential captures confirm them.
 
     0..15         name
+    16            kit level
+    42..47        BD..OH fader colour (six TR-6S tracks)
+    68..74        reverb type/time/level/predelay/lo-hi cut/density
+    108..114      delay type/sync/level/time/feedback and high damp (114)
+    128..130      delay reverb send, coarse tune (0xC9+step), fine tune
+    161, 180..185 MFX switch, control assign, balance/rate/depth/res/manual
+    210..214      sidechain depth/gain/pan/reverb send/delay send
+    248..250      kit LFO waveform/rate/sync
     388 + i*52    instrument record, i = 0..5 in TR-6S track order
-      +0..1 tone   +2 tune   +3 decay   +4 level
-      +6 pan       +7 reverb +8 delay   +11 lfo
-      +28..+41     envelope/gain fields a SAMPLE tone needs (gain at +37)
+      +0..1 tone   +2 tune   +3 decay   +4 level   +5 gain
+      +6 pan       +7 reverb +8 delay   +10 lfo dest  +11 lfo depth
+      +28 attack/FM depth  +29 param 0x37  +30 FM decay  +31 feedback
+      +33 param 0x3F  +37 FM note (not gain)  +38..+40 pitch env/attack/decay
+    960 + i*32    Inst FX record; parameter 1 at +5
 
 Notes from hardware checks (also in docs/PROTOCOL.md and next-plan.md):
 
@@ -26,7 +37,8 @@ Notes from hardware checks (also in docs/PROTOCOL.md and next-plan.md):
     makes the tone play almost inaudibly. Inherit a working record first.
     (These are not *exclusively* sample fields: measured across 839 records on
     this device, ACB instruments populate them ~43% of the time and samples
-    ~95%. See SAMPLE_PARAM_OFFSETS.)
+    ~95%. See SAMPLE_PARAM_OFFSETS. Instrument gain itself is record +5 /
+    SysEx param 0x0A; +37 is FM note / SysEx 0x47, not gain.)
 """
 
 from __future__ import annotations
@@ -37,8 +49,8 @@ from dataclasses import dataclass, field
 TRACKS = ["BD", "SD", "LT", "HC", "CH", "OH"]
 
 SIZE = 1312
-REVERB_TIME_RAW_OFFSET = 69  # confirmed by a one-step panel change on kit slot 1
-REVERB_LEVEL_RAW_OFFSET = 70  # confirmed by a one-step panel change on kit slot 1
+REVERB_TIME_RAW_OFFSET = 69  # panel on kit 1; SysEx 10 00 01 01 nibble2 on kit 0
+REVERB_LEVEL_RAW_OFFSET = 70  # panel on kit 1; SysEx 10 00 01 03 nibble2 on kit 0
 BD_TUNE_RAW_OFFSET = 390  # confirmed by a one-step panel change on kit slot 1
 SD_TUNE_RAW_OFFSET = 442  # confirmed by a one-step panel change on kit slot 1
 LT_TUNE_RAW_OFFSET = 494  # confirmed by a one-step panel change on kit slot 1
@@ -124,12 +136,145 @@ VERIFIED_RAW_OFFSETS = {
 }
 REC_BASE = 388
 REC_STRIDE = 52
-# Bytes carrying a sample's envelope and gain. Measured across 669 ACB and 170
-# sample records from this device: none of these is exclusively a sample field
-# (ACB records populate them ~43% of the time) but a SAMPLE record has them set
-# ~95% of the time, and a blank "----" slot has them all at zero. So this is a
-# majority vote, not a clean predicate -- it exists to catch the blank-record
-# case that makes an assigned sample tone near-silent.
+
+# Live SysEx DT1 on kit slot 0, 2026-11-18: one-step change, restore, whole-blob
+# match. Addresses are 10 00 <page> <param>. Width is one stored byte.
+KIT_LEVEL_RAW_OFFSET = 16  # 10 00 00 10 byte1
+REVERB_TYPE_RAW_OFFSET = 68  # 10 00 01 00 byte1
+REVERB_PREDELAY_RAW_OFFSET = 71  # 10 00 01 05 byte1
+REVERB_LO_CUT_RAW_OFFSET = 72  # 10 00 01 06 byte1
+REVERB_HI_CUT_RAW_OFFSET = 73  # 10 00 01 07 byte1
+REVERB_DENSITY_RAW_OFFSET = 74  # 10 00 01 08 byte1
+DELAY_TYPE_RAW_OFFSET = 108  # 10 00 02 00 byte1
+DELAY_SYNC_RAW_OFFSET = 109  # 10 00 02 01 byte1
+DELAY_LEVEL_RAW_OFFSET = 110  # 10 00 02 02 nibble2
+DELAY_TIME_RAW_OFFSET = 111  # 10 00 02 04 nibble2
+DELAY_FEEDBACK_RAW_OFFSET = 112  # 10 00 02 06 nibble2
+DELAY_H_DAMP_RAW_OFFSET = 114  # 10 00 02 09 byte1
+DELAY_REVERB_SEND_RAW_OFFSET = 128  # 10 00 02 1C nibble2
+DELAY_COARSE_TUNE_RAW_OFFSET = 129  # 10 00 02 1E; stored byte = 0xC9 + step
+DELAY_FINE_TUNE_RAW_OFFSET = 130  # 10 00 02 20 fine (1..201, nibble-encoded)
+MFX_SWITCH_RAW_OFFSET = 161  # 10 00 03 01 byte1
+MFX_CONTROL_ASSIGN_RAW_OFFSET = 180  # 10 00 03 26 byte1
+MFX_BALANCE_RAW_OFFSET = 181  # 10 00 03 27 nibble2
+MFX_RATE_RAW_OFFSET = 182  # 10 00 03 29 nibble2
+MFX_DEPTH_RAW_OFFSET = 183  # 10 00 03 2B nibble2
+MFX_RESONANCE_RAW_OFFSET = 184  # 10 00 03 2D nibble2
+MFX_MANUAL_RAW_OFFSET = 185  # 10 00 03 2F nibble2
+SIDECHAIN_DEPTH_RAW_OFFSET = 210  # 10 00 04 02 nibble2
+SIDECHAIN_GAIN_RAW_OFFSET = 211  # 10 00 04 04 nibble2
+SIDECHAIN_PAN_RAW_OFFSET = 212  # 10 00 04 06 nibble2
+SIDECHAIN_REVERB_SEND_RAW_OFFSET = 213  # 10 00 04 08 nibble2
+SIDECHAIN_DELAY_SEND_RAW_OFFSET = 214  # 10 00 04 0A nibble2
+KIT_LFO_WAVEFORM_RAW_OFFSET = 248  # 10 00 05 00 byte1
+KIT_LFO_RATE_RAW_OFFSET = 249  # 10 00 05 01 nibble2
+KIT_LFO_SYNC_RAW_OFFSET = 250  # 10 00 05 03 byte1
+
+# Record-relative SysEx mappings, same delta on every compact track.
+RECORD_FIELD_DELTAS = {
+    "gain": 5,              # 1@ 0A nibble2
+    "lfo_dest": 10,         # 1@ 13 byte1
+    "lfo_depth": 11,        # 1@ 14 nibble2
+    "attack_or_fm_depth": 28,  # 1@ 35 nibble2
+    "param_37": 29,         # 1@ 37 nibble2
+    "fm_decay": 30,         # 1@ 39 nibble2
+    "feedback": 31,         # 1@ 3B nibble2
+    "param_3f": 33,         # 1@ 3F nibble2
+    "fm_note": 37,          # 1@ 47 nibble2; not instrument gain
+    "pitch_env": 38,        # 1@ 49 nibble2
+    "pitch_attack": 39,     # 1@ 4B nibble2
+    "pitch_decay": 40,      # 1@ 4D nibble2
+}
+
+
+def _record_offsets(delta: int) -> dict[str, int]:
+    return {track: REC_BASE + index * REC_STRIDE + delta
+            for index, track in enumerate(TRACKS)}
+
+
+GAIN_RAW_OFFSETS = _record_offsets(5)
+LFO_DEST_RAW_OFFSETS = _record_offsets(10)
+LFO_DEPTH_RAW_OFFSETS = _record_offsets(11)
+ATTACK_OR_FM_DEPTH_RAW_OFFSETS = _record_offsets(28)
+PARAM_37_RAW_OFFSETS = _record_offsets(29)
+FM_DECAY_RAW_OFFSETS = _record_offsets(30)
+FEEDBACK_RAW_OFFSETS = _record_offsets(31)
+PARAM_3F_RAW_OFFSETS = _record_offsets(33)
+FM_NOTE_RAW_OFFSETS = _record_offsets(37)
+PITCH_ENV_RAW_OFFSETS = _record_offsets(38)
+PITCH_ATTACK_RAW_OFFSETS = _record_offsets(39)
+PITCH_DECAY_RAW_OFFSETS = _record_offsets(40)
+
+# Inst FX records occupy 960..1312 as 11 x 32-byte slots (TR-8S-sized tail).
+# The six TR-6S tracks are the first six: BD at 960, then SD, LT, HC, CH, OH.
+INST_FX_REC_BASE = 960
+INST_FX_REC_STRIDE = 32
+INST_FX_PARAM1_RAW_OFFSETS = {
+    track: INST_FX_REC_BASE + index * INST_FX_REC_STRIDE + 5
+    for index, track in enumerate(TRACKS)
+}  # 2@ 09 nibble2
+COLOR_RAW_OFFSETS = {track: 42 + index for index, track in enumerate(TRACKS)}  # 00 42..47 byte1
+
+VERIFIED_RAW_OFFSETS.update({
+    KIT_LEVEL_RAW_OFFSET: "kit_level_raw",
+    REVERB_TYPE_RAW_OFFSET: "reverb_type_raw",
+    REVERB_PREDELAY_RAW_OFFSET: "reverb_predelay_raw",
+    REVERB_LO_CUT_RAW_OFFSET: "reverb_lo_cut_raw",
+    REVERB_HI_CUT_RAW_OFFSET: "reverb_hi_cut_raw",
+    REVERB_DENSITY_RAW_OFFSET: "reverb_density_raw",
+    DELAY_TYPE_RAW_OFFSET: "delay_type_raw",
+    DELAY_SYNC_RAW_OFFSET: "delay_sync_raw",
+    DELAY_LEVEL_RAW_OFFSET: "delay_level_raw",
+    DELAY_TIME_RAW_OFFSET: "delay_time_raw",
+    DELAY_FEEDBACK_RAW_OFFSET: "delay_feedback_raw",
+    DELAY_H_DAMP_RAW_OFFSET: "delay_h_damp_raw",
+    DELAY_REVERB_SEND_RAW_OFFSET: "delay_reverb_send_raw",
+    DELAY_COARSE_TUNE_RAW_OFFSET: "delay_coarse_tune_raw",
+    DELAY_FINE_TUNE_RAW_OFFSET: "delay_fine_tune_raw",
+    MFX_SWITCH_RAW_OFFSET: "mfx_switch_raw",
+    MFX_CONTROL_ASSIGN_RAW_OFFSET: "mfx_control_assign_raw",
+    MFX_BALANCE_RAW_OFFSET: "mfx_balance_raw",
+    MFX_RATE_RAW_OFFSET: "mfx_rate_raw",
+    MFX_DEPTH_RAW_OFFSET: "mfx_depth_raw",
+    MFX_RESONANCE_RAW_OFFSET: "mfx_resonance_raw",
+    MFX_MANUAL_RAW_OFFSET: "mfx_manual_raw",
+    SIDECHAIN_DEPTH_RAW_OFFSET: "sidechain_depth_raw",
+    SIDECHAIN_GAIN_RAW_OFFSET: "sidechain_gain_raw",
+    SIDECHAIN_PAN_RAW_OFFSET: "sidechain_pan_raw",
+    SIDECHAIN_REVERB_SEND_RAW_OFFSET: "sidechain_reverb_send_raw",
+    SIDECHAIN_DELAY_SEND_RAW_OFFSET: "sidechain_delay_send_raw",
+    KIT_LFO_WAVEFORM_RAW_OFFSET: "kit_lfo_waveform_raw",
+    KIT_LFO_RATE_RAW_OFFSET: "kit_lfo_rate_raw",
+    KIT_LFO_SYNC_RAW_OFFSET: "kit_lfo_sync_raw",
+})
+for _table, _label in (
+    (GAIN_RAW_OFFSETS, "gain_raw"),
+    (LFO_DEST_RAW_OFFSETS, "lfo_dest_raw"),
+    (LFO_DEPTH_RAW_OFFSETS, "lfo_depth_raw"),
+    (ATTACK_OR_FM_DEPTH_RAW_OFFSETS, "attack_or_fm_depth_raw"),
+    (PARAM_37_RAW_OFFSETS, "param_37_raw"),
+    (FM_DECAY_RAW_OFFSETS, "fm_decay_raw"),
+    (FEEDBACK_RAW_OFFSETS, "feedback_raw"),
+    (PARAM_3F_RAW_OFFSETS, "param_3f_raw"),
+    (FM_NOTE_RAW_OFFSETS, "fm_note_raw"),
+    (PITCH_ENV_RAW_OFFSETS, "pitch_env_raw"),
+    (PITCH_ATTACK_RAW_OFFSETS, "pitch_attack_raw"),
+    (PITCH_DECAY_RAW_OFFSETS, "pitch_decay_raw"),
+    (INST_FX_PARAM1_RAW_OFFSETS, "inst_fx_param1_raw"),
+    (COLOR_RAW_OFFSETS, "color_raw"),
+):
+    VERIFIED_RAW_OFFSETS.update(
+        {offset: f"{track}_{_label}" for track, offset in _table.items()}
+    )
+
+# Bytes carrying a sample's envelope and related params. Measured across 669
+# ACB and 170 sample records from this device: none of these is exclusively a
+# sample field (ACB records populate them ~43% of the time) but a SAMPLE record
+# has them set ~95% of the time, and a blank "----" slot has them all at zero.
+# So this is a majority vote, not a clean predicate -- it exists to catch the
+# blank-record case that makes an assigned sample tone near-silent.
+# SysEx later paired several of these deltas: +29 param 0x37, +30 FM decay,
+# +33 param 0x3F, +35 unused in this list, +37 FM note (not gain), +40 pitch decay.
 SAMPLE_PARAM_OFFSETS = (29, 30, 33, 35, 37, 40)
 SAMPLE_PARAMS = slice(28, 42)          # copied wholesale when inheriting
 
@@ -145,16 +290,12 @@ FIELDS = {
 }
 READONLY = {"level"}
 
-# Per-instrument fader colour: eleven consecutive bytes in the kit header, one
-# per instrument in TRACKS order, values 0..11.
-#
-# **[I]** Identified statistically, not by watching the machine. Across 128
-# factory kits these eleven bytes are the only run of exactly eleven with a
-# small shared palette, they vary per kit, and an *empty* kit carries the
-# default [0,1,3,3,3,1,1,2,2,2,2] -- which groups by category (kick, snare,
-# toms, rimshot/clap, hats and cymbals), the shape a factory colour scheme
-# has. What each index looks like has NOT been confirmed against the panel;
-# see COLOUR_NAMES.
+# Per-instrument fader colour. SysEx 10 00 00 42..47 (byte1) verified the six
+# TR-6S track colours at offsets 42..47 (COLOR_RAW_OFFSETS). A longer
+# statistically identified run still exists in the header (values 0..11);
+# bytes after OH are not SysEx-checked. COLOUR_NAMES remain an unverified
+# label for the index, not a fact about the LEDs. color()/set_color stay
+# disabled so bulk colour writes are not exposed.
 COLOR_BASE = 42
 COLOR_COUNT = 12
 
@@ -414,12 +555,197 @@ class Kit:
         """CH Delay Send's stored byte; display mapping is unverified."""
         return self.raw[CH_DELAY_SEND_RAW_OFFSET]
 
+
+    def _raw_from(self, table: dict[str, int], inst: str) -> int:
+        try:
+            return self.raw[table[inst]]
+        except KeyError as error:
+            raise KitError(f"unknown TR-6S track {inst!r}") from error
+
+    def gain_raw(self, inst: str) -> int:
+        """Instrument gain (record +5 / SysEx 0x0A); display mapping unverified."""
+        return self._raw_from(GAIN_RAW_OFFSETS, inst)
+
+    def lfo_dest_raw(self, inst: str) -> int:
+        """LFO destination (record +10 / SysEx 0x13, one-byte)."""
+        return self._raw_from(LFO_DEST_RAW_OFFSETS, inst)
+
+    def lfo_depth_raw(self, inst: str) -> int:
+        """LFO depth (record +11 / SysEx 0x14)."""
+        return self._raw_from(LFO_DEPTH_RAW_OFFSETS, inst)
+
+    def attack_or_fm_depth_raw(self, inst: str) -> int:
+        """Attack or FM depth (record +28 / SysEx 0x35)."""
+        return self._raw_from(ATTACK_OR_FM_DEPTH_RAW_OFFSETS, inst)
+
+    def param_37_raw(self, inst: str) -> int:
+        """Instrument param SysEx 0x37 at record +29; display name unverified."""
+        return self._raw_from(PARAM_37_RAW_OFFSETS, inst)
+
+    def fm_decay_raw(self, inst: str) -> int:
+        """FM decay (record +30 / SysEx 0x39)."""
+        return self._raw_from(FM_DECAY_RAW_OFFSETS, inst)
+
+    def feedback_raw(self, inst: str) -> int:
+        """Feedback (record +31 / SysEx 0x3B)."""
+        return self._raw_from(FEEDBACK_RAW_OFFSETS, inst)
+
+    def param_3f_raw(self, inst: str) -> int:
+        """Instrument param SysEx 0x3F at record +33; display name unverified."""
+        return self._raw_from(PARAM_3F_RAW_OFFSETS, inst)
+
+    def fm_note_raw(self, inst: str) -> int:
+        """FM note (record +37 / SysEx 0x47). This is not instrument gain."""
+        return self._raw_from(FM_NOTE_RAW_OFFSETS, inst)
+
+    def pitch_env_raw(self, inst: str) -> int:
+        """Pitch envelope (record +38 / SysEx 0x49)."""
+        return self._raw_from(PITCH_ENV_RAW_OFFSETS, inst)
+
+    def pitch_attack_raw(self, inst: str) -> int:
+        """Pitch attack (record +39 / SysEx 0x4B)."""
+        return self._raw_from(PITCH_ATTACK_RAW_OFFSETS, inst)
+
+    def pitch_decay_raw(self, inst: str) -> int:
+        """Pitch decay (record +40 / SysEx 0x4D)."""
+        return self._raw_from(PITCH_DECAY_RAW_OFFSETS, inst)
+
+    def inst_fx_param1_raw(self, inst: str) -> int:
+        """Inst FX parameter 1 (record 960+32*track +5 / SysEx 2@ 09)."""
+        return self._raw_from(INST_FX_PARAM1_RAW_OFFSETS, inst)
+
+    def color_raw(self, inst: str) -> int:
+        """Fader colour index for a TR-6S track (header 42..47 / SysEx 00 42..47)."""
+        return self._raw_from(COLOR_RAW_OFFSETS, inst)
+
+    @property
+    def kit_level_raw(self) -> int:
+        return self.raw[KIT_LEVEL_RAW_OFFSET]
+
+    @property
+    def reverb_type_raw(self) -> int:
+        return self.raw[REVERB_TYPE_RAW_OFFSET]
+
+    @property
+    def reverb_predelay_raw(self) -> int:
+        return self.raw[REVERB_PREDELAY_RAW_OFFSET]
+
+    @property
+    def reverb_lo_cut_raw(self) -> int:
+        return self.raw[REVERB_LO_CUT_RAW_OFFSET]
+
+    @property
+    def reverb_hi_cut_raw(self) -> int:
+        return self.raw[REVERB_HI_CUT_RAW_OFFSET]
+
+    @property
+    def reverb_density_raw(self) -> int:
+        return self.raw[REVERB_DENSITY_RAW_OFFSET]
+
+    @property
+    def delay_type_raw(self) -> int:
+        return self.raw[DELAY_TYPE_RAW_OFFSET]
+
+    @property
+    def delay_sync_raw(self) -> int:
+        return self.raw[DELAY_SYNC_RAW_OFFSET]
+
+    @property
+    def delay_level_raw(self) -> int:
+        return self.raw[DELAY_LEVEL_RAW_OFFSET]
+
+    @property
+    def delay_time_raw(self) -> int:
+        return self.raw[DELAY_TIME_RAW_OFFSET]
+
+    @property
+    def delay_feedback_raw(self) -> int:
+        return self.raw[DELAY_FEEDBACK_RAW_OFFSET]
+
+    @property
+    def delay_h_damp_raw(self) -> int:
+        return self.raw[DELAY_H_DAMP_RAW_OFFSET]
+
+    @property
+    def delay_reverb_send_raw(self) -> int:
+        return self.raw[DELAY_REVERB_SEND_RAW_OFFSET]
+
+    @property
+    def delay_coarse_tune_raw(self) -> int:
+        """Delay coarse tune stored byte; value is 0xC9 plus the step."""
+        return self.raw[DELAY_COARSE_TUNE_RAW_OFFSET]
+
+    @property
+    def delay_fine_tune_raw(self) -> int:
+        return self.raw[DELAY_FINE_TUNE_RAW_OFFSET]
+
+    @property
+    def mfx_switch_raw(self) -> int:
+        return self.raw[MFX_SWITCH_RAW_OFFSET]
+
+    @property
+    def mfx_control_assign_raw(self) -> int:
+        return self.raw[MFX_CONTROL_ASSIGN_RAW_OFFSET]
+
+    @property
+    def mfx_balance_raw(self) -> int:
+        return self.raw[MFX_BALANCE_RAW_OFFSET]
+
+    @property
+    def mfx_rate_raw(self) -> int:
+        return self.raw[MFX_RATE_RAW_OFFSET]
+
+    @property
+    def mfx_depth_raw(self) -> int:
+        return self.raw[MFX_DEPTH_RAW_OFFSET]
+
+    @property
+    def mfx_resonance_raw(self) -> int:
+        return self.raw[MFX_RESONANCE_RAW_OFFSET]
+
+    @property
+    def mfx_manual_raw(self) -> int:
+        return self.raw[MFX_MANUAL_RAW_OFFSET]
+
+    @property
+    def sidechain_depth_raw(self) -> int:
+        return self.raw[SIDECHAIN_DEPTH_RAW_OFFSET]
+
+    @property
+    def sidechain_gain_raw(self) -> int:
+        return self.raw[SIDECHAIN_GAIN_RAW_OFFSET]
+
+    @property
+    def sidechain_pan_raw(self) -> int:
+        return self.raw[SIDECHAIN_PAN_RAW_OFFSET]
+
+    @property
+    def sidechain_reverb_send_raw(self) -> int:
+        return self.raw[SIDECHAIN_REVERB_SEND_RAW_OFFSET]
+
+    @property
+    def sidechain_delay_send_raw(self) -> int:
+        return self.raw[SIDECHAIN_DELAY_SEND_RAW_OFFSET]
+
+    @property
+    def kit_lfo_waveform_raw(self) -> int:
+        return self.raw[KIT_LFO_WAVEFORM_RAW_OFFSET]
+
+    @property
+    def kit_lfo_rate_raw(self) -> int:
+        return self.raw[KIT_LFO_RATE_RAW_OFFSET]
+
+    @property
+    def kit_lfo_sync_raw(self) -> int:
+        return self.raw[KIT_LFO_SYNC_RAW_OFFSET]
+
     def candidate_record(self, inst: str) -> dict:
         """Inspect raw fields at TR-8S record offsets in compact TR-6S order.
 
-        Tune, decay, level, pan, reverb send, and delay send are verified on
-        every track. Tone ID and LFO stay candidates and must not be used to
-        construct a device write.
+        Tune, decay, level, gain, pan, both sends, LFO dest/depth, and the
+        SysEx-mapped instrument/Inst FX parameter bytes are verified on every
+        track. Tone ID stays a candidate and must not be used to construct a
+        device write.
         """
         if inst not in TRACKS:
             raise KitError(f"unknown TR-6S track {inst!r}")
@@ -430,7 +756,19 @@ class Kit:
             "tune_raw_verified": self.tune_raw(inst),
             "decay_raw_verified": self.decay_raw(inst),
             "level_raw_verified": self.level_raw(inst),
-            "lfo_raw_candidate": self.raw[base + 11],
+            "gain_raw_verified": self.gain_raw(inst),
+            "lfo_dest_raw_verified": self.lfo_dest_raw(inst),
+            "lfo_depth_raw_verified": self.lfo_depth_raw(inst),
+            "attack_or_fm_depth_raw_verified": self.attack_or_fm_depth_raw(inst),
+            "param_37_raw_verified": self.param_37_raw(inst),
+            "fm_decay_raw_verified": self.fm_decay_raw(inst),
+            "feedback_raw_verified": self.feedback_raw(inst),
+            "param_3f_raw_verified": self.param_3f_raw(inst),
+            "fm_note_raw_verified": self.fm_note_raw(inst),
+            "pitch_env_raw_verified": self.pitch_env_raw(inst),
+            "pitch_attack_raw_verified": self.pitch_attack_raw(inst),
+            "pitch_decay_raw_verified": self.pitch_decay_raw(inst),
+            "inst_fx_param1_raw_verified": self.inst_fx_param1_raw(inst),
             "pan_raw_verified": self.raw[base + 6],
             "reverb_send_raw_verified": self.raw[base + 7],
             "delay_send_raw_verified": self.raw[base + 8],
@@ -473,7 +811,55 @@ class Kit:
                 "oh_pan_raw": self.oh_pan_raw,
                 "oh_reverb_send_raw": self.oh_reverb_send_raw,
                 "oh_delay_send_raw": self.oh_delay_send_raw,
+                "kit_level_raw": self.kit_level_raw,
+                "reverb_type_raw": self.reverb_type_raw,
+                "reverb_predelay_raw": self.reverb_predelay_raw,
+                "reverb_lo_cut_raw": self.reverb_lo_cut_raw,
+                "reverb_hi_cut_raw": self.reverb_hi_cut_raw,
+                "reverb_density_raw": self.reverb_density_raw,
+                "delay_type_raw": self.delay_type_raw,
+                "delay_sync_raw": self.delay_sync_raw,
+                "delay_level_raw": self.delay_level_raw,
+                "delay_time_raw": self.delay_time_raw,
+                "delay_feedback_raw": self.delay_feedback_raw,
+                "delay_h_damp_raw": self.delay_h_damp_raw,
+                "delay_reverb_send_raw": self.delay_reverb_send_raw,
+                "delay_coarse_tune_raw": self.delay_coarse_tune_raw,
+                "delay_fine_tune_raw": self.delay_fine_tune_raw,
+                "mfx_switch_raw": self.mfx_switch_raw,
+                "mfx_control_assign_raw": self.mfx_control_assign_raw,
+                "mfx_balance_raw": self.mfx_balance_raw,
+                "mfx_rate_raw": self.mfx_rate_raw,
+                "mfx_depth_raw": self.mfx_depth_raw,
+                "mfx_resonance_raw": self.mfx_resonance_raw,
+                "mfx_manual_raw": self.mfx_manual_raw,
+                "sidechain_depth_raw": self.sidechain_depth_raw,
+                "sidechain_gain_raw": self.sidechain_gain_raw,
+                "sidechain_pan_raw": self.sidechain_pan_raw,
+                "sidechain_reverb_send_raw": self.sidechain_reverb_send_raw,
+                "sidechain_delay_send_raw": self.sidechain_delay_send_raw,
+                "kit_lfo_waveform_raw": self.kit_lfo_waveform_raw,
+                "kit_lfo_rate_raw": self.kit_lfo_rate_raw,
+                "kit_lfo_sync_raw": self.kit_lfo_sync_raw,
                 "tune_raw_by_track": {inst: self.tune_raw(inst) for inst in TRACKS},
+                "gain_raw_by_track": {inst: self.gain_raw(inst) for inst in TRACKS},
+                "lfo_dest_raw_by_track": {inst: self.lfo_dest_raw(inst) for inst in TRACKS},
+                "lfo_depth_raw_by_track": {inst: self.lfo_depth_raw(inst) for inst in TRACKS},
+                "attack_or_fm_depth_raw_by_track": {
+                    inst: self.attack_or_fm_depth_raw(inst) for inst in TRACKS
+                },
+                "param_37_raw_by_track": {inst: self.param_37_raw(inst) for inst in TRACKS},
+                "fm_decay_raw_by_track": {inst: self.fm_decay_raw(inst) for inst in TRACKS},
+                "feedback_raw_by_track": {inst: self.feedback_raw(inst) for inst in TRACKS},
+                "param_3f_raw_by_track": {inst: self.param_3f_raw(inst) for inst in TRACKS},
+                "fm_note_raw_by_track": {inst: self.fm_note_raw(inst) for inst in TRACKS},
+                "pitch_env_raw_by_track": {inst: self.pitch_env_raw(inst) for inst in TRACKS},
+                "pitch_attack_raw_by_track": {inst: self.pitch_attack_raw(inst) for inst in TRACKS},
+                "pitch_decay_raw_by_track": {inst: self.pitch_decay_raw(inst) for inst in TRACKS},
+                "inst_fx_param1_raw_by_track": {
+                    inst: self.inst_fx_param1_raw(inst) for inst in TRACKS
+                },
+                "color_raw_by_track": {inst: self.color_raw(inst) for inst in TRACKS},
             },
             "candidates": {
                 "source": "TR-8S bulk field offsets in confirmed compact TR-6S records",
