@@ -1,7 +1,7 @@
 """
 Layer 2 — TR-6S kit blob. The name, raw reverb offsets, all six tune
-positions, BD Decay, BD Pan, BD Reverb/Delay Sends, OH Pan, and OH Delay
-Send have been checked on hardware.
+positions, BD Decay, and pan / reverb send / delay send on every track
+have been checked on hardware.
 Other field offsets below
 are TR-8S research and remain disabled until differential captures confirm them.
 
@@ -43,7 +43,20 @@ BD_DECAY_RAW_OFFSET = 391  # confirmed by a one-step panel change on kit slot 1
 BD_PAN_RAW_OFFSET = 394  # confirmed by a one-step right pan change on kit slot 1
 BD_REVERB_SEND_RAW_OFFSET = 395  # confirmed by a one-step panel change on kit slot 1
 BD_DELAY_SEND_RAW_OFFSET = 396  # confirmed by a one-step panel change on kit slot 1
+SD_PAN_RAW_OFFSET = 446  # E16 ch12 CC40 value 63: 128 -> 126; value 64 restored
+SD_REVERB_SEND_RAW_OFFSET = 447  # E16 ch12 CC43: 65 -> 64; exact byte restored via SysEx
+SD_DELAY_SEND_RAW_OFFSET = 448  # E16 ch12 CC44 value 111: 224 -> 222; value 112 restored
+LT_PAN_RAW_OFFSET = 498  # E16 ch12 CC20: 127 -> 126; exact byte restored via SysEx
+LT_REVERB_SEND_RAW_OFFSET = 499  # E16 ch12 CC23 value 63: 128 -> 126; value 64 restored
+LT_DELAY_SEND_RAW_OFFSET = 500  # E16 ch12 CC24 value 111: 224 -> 222; value 112 restored
+HC_PAN_RAW_OFFSET = 550  # E16 ch12 CC50 value 63: 128 -> 126; value 64 restored
+HC_REVERB_SEND_RAW_OFFSET = 551  # E16 ch12 CC53 value 126: 255 -> 252; value 127 restored
+HC_DELAY_SEND_RAW_OFFSET = 552  # E16 ch12 CC54: 189 -> 188; exact byte restored via SysEx
+CH_PAN_RAW_OFFSET = 602  # E16 ch12 CC60 value 82: 166 -> 164; value 83 restored
+CH_REVERB_SEND_RAW_OFFSET = 603  # E16 ch12 CC63 value 63: 128 -> 126; value 64 restored
+CH_DELAY_SEND_RAW_OFFSET = 604  # E16 ch12 CC64 value 1: 0 -> 2; value 0 restored
 OH_PAN_RAW_OFFSET = 654  # E16 ch12 CC70 value 82: 166 -> 164; value 83 restored the blob
+OH_REVERB_SEND_RAW_OFFSET = 655  # E16 ch12 CC73 value 63: 128 -> 126; value 64 restored
 OH_DELAY_SEND_RAW_OFFSET = 656  # E16 ch12 CC74 value 111: 224 -> 222; value 112 restored
 TUNE_RAW_OFFSETS = dict(zip(TRACKS, (
     BD_TUNE_RAW_OFFSET, SD_TUNE_RAW_OFFSET, LT_TUNE_RAW_OFFSET,
@@ -56,7 +69,20 @@ VERIFIED_RAW_OFFSETS = {
     BD_PAN_RAW_OFFSET: "BD_pan_raw",
     BD_REVERB_SEND_RAW_OFFSET: "BD_reverb_send_raw",
     BD_DELAY_SEND_RAW_OFFSET: "BD_delay_send_raw",
+    SD_PAN_RAW_OFFSET: "SD_pan_raw",
+    SD_REVERB_SEND_RAW_OFFSET: "SD_reverb_send_raw",
+    SD_DELAY_SEND_RAW_OFFSET: "SD_delay_send_raw",
+    LT_PAN_RAW_OFFSET: "LT_pan_raw",
+    LT_REVERB_SEND_RAW_OFFSET: "LT_reverb_send_raw",
+    LT_DELAY_SEND_RAW_OFFSET: "LT_delay_send_raw",
+    HC_PAN_RAW_OFFSET: "HC_pan_raw",
+    HC_REVERB_SEND_RAW_OFFSET: "HC_reverb_send_raw",
+    HC_DELAY_SEND_RAW_OFFSET: "HC_delay_send_raw",
+    CH_PAN_RAW_OFFSET: "CH_pan_raw",
+    CH_REVERB_SEND_RAW_OFFSET: "CH_reverb_send_raw",
+    CH_DELAY_SEND_RAW_OFFSET: "CH_delay_send_raw",
     OH_PAN_RAW_OFFSET: "OH_pan_raw",
+    OH_REVERB_SEND_RAW_OFFSET: "OH_reverb_send_raw",
     OH_DELAY_SEND_RAW_OFFSET: "OH_delay_send_raw",
     **{offset: f"{track}_tune_raw" for track, offset in TUNE_RAW_OFFSETS.items()},
 }
@@ -218,11 +244,76 @@ class Kit:
         """OH Delay Send's stored byte; display mapping is unverified."""
         return self.raw[OH_DELAY_SEND_RAW_OFFSET]
 
+    @property
+    def oh_reverb_send_raw(self) -> int:
+        """OH Reverb Send's stored byte; display mapping is unverified."""
+        return self.raw[OH_REVERB_SEND_RAW_OFFSET]
+
+    @property
+    def sd_pan_raw(self) -> int:
+        """SD Pan's stored byte; display mapping is unverified."""
+        return self.raw[SD_PAN_RAW_OFFSET]
+
+    @property
+    def sd_reverb_send_raw(self) -> int:
+        """SD Reverb Send's stored byte; display mapping is unverified."""
+        return self.raw[SD_REVERB_SEND_RAW_OFFSET]
+
+    @property
+    def sd_delay_send_raw(self) -> int:
+        """SD Delay Send's stored byte; display mapping is unverified."""
+        return self.raw[SD_DELAY_SEND_RAW_OFFSET]
+
+    @property
+    def lt_pan_raw(self) -> int:
+        """LT Pan's stored byte; display mapping is unverified."""
+        return self.raw[LT_PAN_RAW_OFFSET]
+
+    @property
+    def lt_reverb_send_raw(self) -> int:
+        """LT Reverb Send's stored byte; display mapping is unverified."""
+        return self.raw[LT_REVERB_SEND_RAW_OFFSET]
+
+    @property
+    def lt_delay_send_raw(self) -> int:
+        """LT Delay Send's stored byte; display mapping is unverified."""
+        return self.raw[LT_DELAY_SEND_RAW_OFFSET]
+
+    @property
+    def hc_pan_raw(self) -> int:
+        """HC Pan's stored byte; display mapping is unverified."""
+        return self.raw[HC_PAN_RAW_OFFSET]
+
+    @property
+    def hc_reverb_send_raw(self) -> int:
+        """HC Reverb Send's stored byte; display mapping is unverified."""
+        return self.raw[HC_REVERB_SEND_RAW_OFFSET]
+
+    @property
+    def hc_delay_send_raw(self) -> int:
+        """HC Delay Send's stored byte; display mapping is unverified."""
+        return self.raw[HC_DELAY_SEND_RAW_OFFSET]
+
+    @property
+    def ch_pan_raw(self) -> int:
+        """CH Pan's stored byte; display mapping is unverified."""
+        return self.raw[CH_PAN_RAW_OFFSET]
+
+    @property
+    def ch_reverb_send_raw(self) -> int:
+        """CH Reverb Send's stored byte; display mapping is unverified."""
+        return self.raw[CH_REVERB_SEND_RAW_OFFSET]
+
+    @property
+    def ch_delay_send_raw(self) -> int:
+        """CH Delay Send's stored byte; display mapping is unverified."""
+        return self.raw[CH_DELAY_SEND_RAW_OFFSET]
+
     def candidate_record(self, inst: str) -> dict:
         """Inspect raw fields at TR-8S record offsets in compact TR-6S order.
 
-        Tune is verified on every track. BD also has verified decay, pan, and
-        sends; OH has verified pan and delay send. The other labels are
+        Tune is verified on every track. Pan, reverb send, and delay send are
+        verified on every track. Only BD decay is verified; level and LFO stay
         candidates and must not be used to construct a device write.
         """
         if inst not in TRACKS:
@@ -234,11 +325,11 @@ class Kit:
             "tune_raw_verified": self.tune_raw(inst),
             "level_raw_candidate": self.raw[base + 4],
             "lfo_raw_candidate": self.raw[base + 11],
+            "pan_raw_verified": self.raw[base + 6],
+            "reverb_send_raw_verified": self.raw[base + 7],
+            "delay_send_raw_verified": self.raw[base + 8],
         }
         record["decay_raw_verified" if inst == "BD" else "decay_raw_candidate"] = self.raw[base + 3]
-        record["pan_raw_verified" if inst in ("BD", "OH") else "pan_raw_candidate"] = self.raw[base + 6]
-        record["reverb_send_raw_verified" if inst == "BD" else "reverb_send_raw_candidate"] = self.raw[base + 7]
-        record["delay_send_raw_verified" if inst in ("BD", "OH") else "delay_send_raw_candidate"] = self.raw[base + 8]
         return record
 
     def inspect(self) -> dict:
@@ -252,7 +343,20 @@ class Kit:
                 "bd_pan_raw": self.bd_pan_raw,
                 "bd_reverb_send_raw": self.bd_reverb_send_raw,
                 "bd_delay_send_raw": self.bd_delay_send_raw,
+                "sd_pan_raw": self.sd_pan_raw,
+                "sd_reverb_send_raw": self.sd_reverb_send_raw,
+                "sd_delay_send_raw": self.sd_delay_send_raw,
+                "lt_pan_raw": self.lt_pan_raw,
+                "lt_reverb_send_raw": self.lt_reverb_send_raw,
+                "lt_delay_send_raw": self.lt_delay_send_raw,
+                "hc_pan_raw": self.hc_pan_raw,
+                "hc_reverb_send_raw": self.hc_reverb_send_raw,
+                "hc_delay_send_raw": self.hc_delay_send_raw,
+                "ch_pan_raw": self.ch_pan_raw,
+                "ch_reverb_send_raw": self.ch_reverb_send_raw,
+                "ch_delay_send_raw": self.ch_delay_send_raw,
                 "oh_pan_raw": self.oh_pan_raw,
+                "oh_reverb_send_raw": self.oh_reverb_send_raw,
                 "oh_delay_send_raw": self.oh_delay_send_raw,
                 "tune_raw_by_track": {inst: self.tune_raw(inst) for inst in TRACKS},
             },
