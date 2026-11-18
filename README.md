@@ -23,7 +23,7 @@ tr6s diff-pattern /tmp/pattern-before.bin /tmp/pattern-after.bin
 
 The device must be stopped for a bulk read. The CLI uses the TR-6S MIDI 1 ALSA sequencer port so it can coexist with the Pi's MIDI router and connected E16. Set `TR6S_SEQ_PORT` to a `client:port` value if automatic discovery does not find it. The output path must not already exist.
 
-`inspect-kit` groups the hardware-confirmed name, raw reverb values, six raw tune values, BD Decay, BD Pan, BD Reverb Send, and BD Delay Send under `verified`. It shows tone ID, the other decay, pan, and send bytes, level, and LFO bytes under `candidates`. Those candidate labels come from TR-8S bulk offsets applied to the confirmed compact TR-6S records; their meanings have not yet been checked by TR-6S panel changes. The command reads only and does not expose an editor.
+`inspect-kit` groups the hardware-confirmed name, raw reverb values, six raw tune values, BD Decay, BD Pan, BD Reverb Send, BD Delay Send, OH Pan, and OH Delay Send under `verified`. It shows tone ID, the remaining decay, pan, and send bytes, level, and LFO bytes under `candidates`. Those candidate labels come from TR-8S bulk offsets applied to the confirmed compact TR-6S records; their meanings have not yet been checked by TR-6S panel changes. The command reads only and does not expose an editor.
 
 `diff-kit` reports changed offsets between two saved kit blobs and labels a field as `verified_field` or `candidate_field`. A candidate label is a pointer for the next panel check, not a confirmed TR-6S field.
 
@@ -45,11 +45,15 @@ BD Reverb Send is confirmed at offset 395: one panel increment changed only `00`
 
 BD Delay Send is confirmed at offset 396: one panel increment changed only `00` to `01`, and reversing it restored the full kit blob. The inspector marks this raw byte as verified.
 
+OH Pan is confirmed at offset 654: E16 channel 12 CC 70 value 82 changed only that byte from `A6` (166) to `A4` (164), and value 83 restored the entire kit blob. The inspector marks this raw byte as verified.
+
+OH Delay Send is confirmed at offset 656: E16 channel 12 CC 74 value 111 changed only that byte from `E0` (224) to `DE` (222), and value 112 restored the entire kit blob. The inspector marks this raw byte as verified.
+
 ## Current limits
 
 TR-8S Studio's pattern and kit editors still use TR-8S offsets. Kit tune, decay, pan, and send offsets that have been checked on the TR-6S are the verified kit fields above. Pattern name, tempo, kit, scale, shuffle, steps, and motion have not been established through TR-6S differential captures; `inspect-pattern` and `diff-pattern` keep those labels as candidates. Bulk writes, commits, sample uploads, and tone deletion are disabled in the transport. The web interface and the remaining tool commands have not yet been adapted or validated for the TR-6S. Do not treat them as a working TR-6S editor.
 
-The next step is a hardware pattern capture: one reversible panel change, then `diff-pattern` against the before-blob. See `next-plan.md`. Kit fields that are still candidates are tone selection, instrument level, LFO, and one non-BD decay, pan, or send.
+The next step is a hardware pattern capture: one reversible panel change, then `diff-pattern` against the before-blob. See `next-plan.md`. Kit fields that are still candidates are tone selection, instrument level, LFO, non-BD decay, and the remaining unverified pan and send fields.
 
 Differential captures on kit slot 1 have confirmed raw Reverb Time at offset 69 (`08` to `09` for one increment) and raw Reverb Level at offset 70 (`00` to `01`). Each change affected exactly one byte, and the full blob matched its baseline after restoration. Both fields are exposed for reading; their display-value mappings remain to be verified.
 
