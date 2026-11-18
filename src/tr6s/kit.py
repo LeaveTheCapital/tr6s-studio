@@ -1,20 +1,26 @@
 """
 Layer 2 — TR-6S kit blob. The name, raw reverb offsets, all six tune
-positions, BD Decay, and pan / reverb send / delay send on every track
-have been checked on hardware.
+positions, decay and level on every track, and pan / reverb send /
+delay send on every track have been checked on hardware.
 Other field offsets below
 are TR-8S research and remain disabled until differential captures confirm them.
 
     0..15         name
     388 + i*52    instrument record, i = 0..5 in TR-6S track order
-      +0..1 tone   +2 tune   +3 decay   +4 level (READ-ONLY)
+      +0..1 tone   +2 tune   +3 decay   +4 level
       +6 pan       +7 reverb +8 delay   +11 lfo
       +28..+41     envelope/gain fields a SAMPLE tone needs (gain at +37)
 
-Two hard-won rules, both in docs/PROTOCOL.md:
+Notes from hardware checks (also in docs/PROTOCOL.md and next-plan.md):
 
-  * `level` cannot be written -- the device overwrites it with the physical
-    fader position on every save.
+  * Native TR-6S CCs (MIDI implementation chart: tune/decay/level/CTRL) affect
+    only the currently selected kit, on receive channel 10 (Pattern Ch). E16
+    Lua SysEx writes are addressed to a specific kit slot and do not depend
+    on which kit is selected.
+  * `level` is writable with a native CC on the current kit and that byte
+    survives a subsequent bulk read if the faders are not moved. Selecting a
+    kit can still refresh level bytes from the physical faders. Bulk writers
+    stay disabled.
   * Writing a SAMPLE tone id is not enough. A sample needs the envelope/gain
     fields in +28..+41, and a blank "----" slot has them all at zero, which
     makes the tone play almost inaudibly. Inherit a working record first.
@@ -40,6 +46,17 @@ HC_TUNE_RAW_OFFSET = 546  # confirms compact track index 3, not TR-8S index 6
 CH_TUNE_RAW_OFFSET = 598  # confirmed by a one-step panel change on kit slot 1
 OH_TUNE_RAW_OFFSET = 650  # confirms compact track index 5, not TR-8S index 8
 BD_DECAY_RAW_OFFSET = 391  # confirmed by a one-step panel change on kit slot 1
+SD_DECAY_RAW_OFFSET = 443  # native ch10 CC28 on current kit 0: 128 -> 126; CC 64 restored
+LT_DECAY_RAW_OFFSET = 495  # native ch10 CC47 on current kit 0: 2 -> 0; CC 1 restored
+HC_DECAY_RAW_OFFSET = 547  # native ch10 CC59 on current kit 0: 128 -> 126; CC 64 restored
+CH_DECAY_RAW_OFFSET = 599  # native ch10 CC62 on current kit 0: 42 -> 40; CC 21 restored
+OH_DECAY_RAW_OFFSET = 651  # native ch10 CC81 on current kit 0: 128 -> 126; CC 64 restored
+BD_LEVEL_RAW_OFFSET = 392  # native ch10 CC24 on current kit 0: 0 -> 2; CC 0 restored
+SD_LEVEL_RAW_OFFSET = 444  # native ch10 CC29 on current kit 0: 255 -> 252; CC 127 restored
+LT_LEVEL_RAW_OFFSET = 496  # native ch10 CC48 on current kit 0: 0 -> 2; CC 0 restored
+HC_LEVEL_RAW_OFFSET = 548  # native ch10 CC60 on current kit 0: 0 -> 2; CC 0 restored
+CH_LEVEL_RAW_OFFSET = 600  # native ch10 CC63 on current kit 0: 208 -> 206; CC 104 restored
+OH_LEVEL_RAW_OFFSET = 652  # native ch10 CC82 on current kit 0: 0 -> 2; CC 0 restored
 BD_PAN_RAW_OFFSET = 394  # confirmed by a one-step right pan change on kit slot 1
 BD_REVERB_SEND_RAW_OFFSET = 395  # confirmed by a one-step panel change on kit slot 1
 BD_DELAY_SEND_RAW_OFFSET = 396  # confirmed by a one-step panel change on kit slot 1
@@ -62,10 +79,29 @@ TUNE_RAW_OFFSETS = dict(zip(TRACKS, (
     BD_TUNE_RAW_OFFSET, SD_TUNE_RAW_OFFSET, LT_TUNE_RAW_OFFSET,
     HC_TUNE_RAW_OFFSET, CH_TUNE_RAW_OFFSET, OH_TUNE_RAW_OFFSET,
 )))
+DECAY_RAW_OFFSETS = dict(zip(TRACKS, (
+    BD_DECAY_RAW_OFFSET, SD_DECAY_RAW_OFFSET, LT_DECAY_RAW_OFFSET,
+    HC_DECAY_RAW_OFFSET, CH_DECAY_RAW_OFFSET, OH_DECAY_RAW_OFFSET,
+)))
+LEVEL_RAW_OFFSETS = dict(zip(TRACKS, (
+    BD_LEVEL_RAW_OFFSET, SD_LEVEL_RAW_OFFSET, LT_LEVEL_RAW_OFFSET,
+    HC_LEVEL_RAW_OFFSET, CH_LEVEL_RAW_OFFSET, OH_LEVEL_RAW_OFFSET,
+)))
 VERIFIED_RAW_OFFSETS = {
     REVERB_TIME_RAW_OFFSET: "reverb_time_raw",
     REVERB_LEVEL_RAW_OFFSET: "reverb_level_raw",
     BD_DECAY_RAW_OFFSET: "BD_decay_raw",
+    SD_DECAY_RAW_OFFSET: "SD_decay_raw",
+    LT_DECAY_RAW_OFFSET: "LT_decay_raw",
+    HC_DECAY_RAW_OFFSET: "HC_decay_raw",
+    CH_DECAY_RAW_OFFSET: "CH_decay_raw",
+    OH_DECAY_RAW_OFFSET: "OH_decay_raw",
+    BD_LEVEL_RAW_OFFSET: "BD_level_raw",
+    SD_LEVEL_RAW_OFFSET: "SD_level_raw",
+    LT_LEVEL_RAW_OFFSET: "LT_level_raw",
+    HC_LEVEL_RAW_OFFSET: "HC_level_raw",
+    CH_LEVEL_RAW_OFFSET: "CH_level_raw",
+    OH_LEVEL_RAW_OFFSET: "OH_level_raw",
     BD_PAN_RAW_OFFSET: "BD_pan_raw",
     BD_REVERB_SEND_RAW_OFFSET: "BD_reverb_send_raw",
     BD_DELAY_SEND_RAW_OFFSET: "BD_delay_send_raw",
@@ -219,6 +255,75 @@ class Kit:
         """BD Decay's stored byte; display mapping is not yet established."""
         return self.raw[BD_DECAY_RAW_OFFSET]
 
+    def decay_raw(self, inst: str) -> int:
+        """Read a verified track's raw decay byte in compact TR-6S order."""
+        try:
+            return self.raw[DECAY_RAW_OFFSETS[inst]]
+        except KeyError as error:
+            raise KitError(f"unknown TR-6S track {inst!r}") from error
+
+    def level_raw(self, inst: str) -> int:
+        """Read a verified track's raw level byte in compact TR-6S order."""
+        try:
+            return self.raw[LEVEL_RAW_OFFSETS[inst]]
+        except KeyError as error:
+            raise KitError(f"unknown TR-6S track {inst!r}") from error
+
+    @property
+    def sd_decay_raw(self) -> int:
+        """SD Decay's stored byte; display mapping is not yet established."""
+        return self.raw[SD_DECAY_RAW_OFFSET]
+
+    @property
+    def lt_decay_raw(self) -> int:
+        """LT Decay's stored byte; display mapping is not yet established."""
+        return self.raw[LT_DECAY_RAW_OFFSET]
+
+    @property
+    def hc_decay_raw(self) -> int:
+        """HC Decay's stored byte; display mapping is not yet established."""
+        return self.raw[HC_DECAY_RAW_OFFSET]
+
+    @property
+    def ch_decay_raw(self) -> int:
+        """CH Decay's stored byte; display mapping is not yet established."""
+        return self.raw[CH_DECAY_RAW_OFFSET]
+
+    @property
+    def oh_decay_raw(self) -> int:
+        """OH Decay's stored byte; display mapping is not yet established."""
+        return self.raw[OH_DECAY_RAW_OFFSET]
+
+    @property
+    def bd_level_raw(self) -> int:
+        """BD Level's stored byte. Native CC can write it on the current kit."""
+        return self.raw[BD_LEVEL_RAW_OFFSET]
+
+    @property
+    def sd_level_raw(self) -> int:
+        """SD Level's stored byte. Native CC can write it on the current kit."""
+        return self.raw[SD_LEVEL_RAW_OFFSET]
+
+    @property
+    def lt_level_raw(self) -> int:
+        """LT Level's stored byte. Native CC can write it on the current kit."""
+        return self.raw[LT_LEVEL_RAW_OFFSET]
+
+    @property
+    def hc_level_raw(self) -> int:
+        """HC Level's stored byte. Native CC can write it on the current kit."""
+        return self.raw[HC_LEVEL_RAW_OFFSET]
+
+    @property
+    def ch_level_raw(self) -> int:
+        """CH Level's stored byte. Native CC can write it on the current kit."""
+        return self.raw[CH_LEVEL_RAW_OFFSET]
+
+    @property
+    def oh_level_raw(self) -> int:
+        """OH Level's stored byte. Native CC can write it on the current kit."""
+        return self.raw[OH_LEVEL_RAW_OFFSET]
+
     @property
     def bd_pan_raw(self) -> int:
         """BD Pan's stored byte; 0x80 is the tested centre position."""
@@ -312,25 +417,24 @@ class Kit:
     def candidate_record(self, inst: str) -> dict:
         """Inspect raw fields at TR-8S record offsets in compact TR-6S order.
 
-        Tune is verified on every track. Pan, reverb send, and delay send are
-        verified on every track. Only BD decay is verified; level and LFO stay
-        candidates and must not be used to construct a device write.
+        Tune, decay, level, pan, reverb send, and delay send are verified on
+        every track. Tone ID and LFO stay candidates and must not be used to
+        construct a device write.
         """
         if inst not in TRACKS:
             raise KitError(f"unknown TR-6S track {inst!r}")
         base = REC_BASE + TRACKS.index(inst) * REC_STRIDE
-        record = {
+        return {
             "record_offset": base,
             "tone_id_candidate": struct.unpack_from("<H", self.raw, base)[0],
             "tune_raw_verified": self.tune_raw(inst),
-            "level_raw_candidate": self.raw[base + 4],
+            "decay_raw_verified": self.decay_raw(inst),
+            "level_raw_verified": self.level_raw(inst),
             "lfo_raw_candidate": self.raw[base + 11],
             "pan_raw_verified": self.raw[base + 6],
             "reverb_send_raw_verified": self.raw[base + 7],
             "delay_send_raw_verified": self.raw[base + 8],
         }
-        record["decay_raw_verified" if inst == "BD" else "decay_raw_candidate"] = self.raw[base + 3]
-        return record
 
     def inspect(self) -> dict:
         """Return verified reads and separately labelled bulk-layout candidates."""
@@ -340,6 +444,17 @@ class Kit:
                 "reverb_time_raw": self.reverb_time_raw,
                 "reverb_level_raw": self.reverb_level_raw,
                 "bd_decay_raw": self.bd_decay_raw,
+                "sd_decay_raw": self.sd_decay_raw,
+                "lt_decay_raw": self.lt_decay_raw,
+                "hc_decay_raw": self.hc_decay_raw,
+                "ch_decay_raw": self.ch_decay_raw,
+                "oh_decay_raw": self.oh_decay_raw,
+                "bd_level_raw": self.bd_level_raw,
+                "sd_level_raw": self.sd_level_raw,
+                "lt_level_raw": self.lt_level_raw,
+                "hc_level_raw": self.hc_level_raw,
+                "ch_level_raw": self.ch_level_raw,
+                "oh_level_raw": self.oh_level_raw,
                 "bd_pan_raw": self.bd_pan_raw,
                 "bd_reverb_send_raw": self.bd_reverb_send_raw,
                 "bd_delay_send_raw": self.bd_delay_send_raw,
